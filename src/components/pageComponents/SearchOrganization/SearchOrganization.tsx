@@ -47,6 +47,8 @@ const SearchOrganization = () => {
       {repos && (
         <ListWithDetails data={repos} fetchDetails={fetchCommitDetails} />
       )}
+
+      {error && <div>{error}</div>}
     </>
   );
 };

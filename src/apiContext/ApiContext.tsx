@@ -56,8 +56,10 @@ export const ApiProvider: FC<{ children: ReactNode }> = ({ children }) => {
         setError(
           `Failed to fetch repositories: ${axiosError.response?.status}`
         );
+        setRepos([]);
       } else {
         setError(`Unexpected error: ${error}`);
+        setRepos([]);
       }
     } finally {
       setLoading(false);
