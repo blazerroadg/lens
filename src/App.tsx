@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import "./App.css";
 import { ApiProvider } from "./apiContext/ApiContext";
 import SearchOrganization from "./components/pageComponents/SearchOrganization/SearchOrganization";
