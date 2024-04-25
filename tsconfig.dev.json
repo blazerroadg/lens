@@ -1,0 +1,8 @@
+{
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "jest.config.js",
+    "babel.config.js"
+  ]
+}

@@ -29,17 +29,21 @@
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.7.1",
+    "@typescript-eslint/parser": "^5.12.0",
+    "eslint": "^8.9.0",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-react": "^7.34.1"
+  },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "DISABLE_ESLINT_PLUGIN='true' react-scripts build",
     "test": "jest",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+    "eject": "react-scripts eject",
+    "lint": "eslint --ext .js,.ts .",
+    "lint:fix": "eslint --ext .js,.ts --fix . --ignore-pattern 'functions/**/*'"
   },
   "browserslist": {
     "production": [

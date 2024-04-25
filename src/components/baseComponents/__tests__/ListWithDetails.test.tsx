@@ -1,7 +1,7 @@
 import { render, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
-import ListWithDetails from "../ListWithDetails/ListWithDetails";
+import ListWithDetails from "../../composeComponents/ListWithDetails/ListWithDetails";
 
 const mockData = [
   { name: "Repo 1", forks_count: 5 },

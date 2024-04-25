@@ -1,13 +1,12 @@
 import { ChangeEvent, useState } from "react";
 import SearchSection from "./SearchSection";
-import ListWithDetails from "../../baseComponents/ListWithDetails/ListWithDetails";
-import { Repo } from "../../../models/Repo";
-import { Commit } from "../../../models/Commit";
+import ListWithDetails from "../../composeComponents/ListWithDetails/ListWithDetails";
+import { Repo } from "../../../../models/Repo";
+import { Commit } from "../../../../models/Commit";
 import { useApi } from "../../../apiContext/ApiContext";
 import { config } from "../../../config";
 
 const SearchOrganization = () => {
-  const { githubToken } = config;
   const [orgName, setOrgName] = useState("");
   const { repos, loading, error, getReposSortedByForks, fetchCommitsForRepo } =
     useApi();
@@ -19,7 +18,7 @@ const SearchOrganization = () => {
     if (orgName.length === 0) {
       return;
     }
-    getReposSortedByForks(orgName, githubToken);
+    getReposSortedByForks(orgName);
   };
 
   const fetchCommitDetails = async (
@@ -28,7 +27,7 @@ const SearchOrganization = () => {
   ): Promise<Commit[]> => {
     const { name } = repo;
     try {
-      const commits = await fetchCommitsForRepo(orgName, name, githubToken);
+      const commits = await fetchCommitsForRepo(orgName, name);
       return commits;
     } catch (error) {
       console.error("Error fetching commits:", error);

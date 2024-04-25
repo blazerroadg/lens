@@ -16,5 +16,5 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "src/apiContext/ApiContext.tsx"]
+  "include": ["src", "src/apiContext/ApiContext.tsx", "models", ".eslintrc.js"]
 }

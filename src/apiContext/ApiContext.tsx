@@ -1,18 +1,15 @@
 import { createContext, useContext, useState, FC, ReactNode } from "react";
 import axios, { AxiosError } from "axios";
-import { Repo } from "../models/Repo";
-import { Commit } from "../models/Commit";
+import { Repo } from "../../models/Repo";
+import { Commit } from "../../models/Commit";
+import { config } from "../config";
 
 interface ApiContextType {
   repos: Repo[];
   loading: boolean;
   error: string | null;
-  getReposSortedByForks: (orgName: string, token: string) => Promise<void>;
-  fetchCommitsForRepo: (
-    orgName: string,
-    repoName: string,
-    token: string
-  ) => Promise<Commit[]>;
+  getReposSortedByForks: (orgName: string) => Promise<void>;
+  fetchCommitsForRepo: (orgName: string, repoName: string) => Promise<Commit[]>;
 }
 
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
@@ -29,33 +26,23 @@ export const ApiProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [repos, setRepos] = useState<Repo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { functionBaseUrl } = config;
 
-  const getReposSortedByForks = async (
-    orgName: string,
-    token: string
-  ): Promise<void> => {
-    const apiUrl = `https://api.github.com/orgs/${orgName}/repos`;
+  const getReposSortedByForks = async (orgName: string): Promise<void> => {
+    const functionUrl = `${functionBaseUrl}/getReposSortedByForks`;
 
     try {
       setLoading(true);
-      const response = await axios.get<Repo[]>(apiUrl, {
-        headers: {
-          Authorization: `token ${token}`,
-          Accept: "application/vnd.github.v3+json",
-        },
-      });
-
-      const sortedRepos = response.data.sort(
-        (a, b) => b.forks_count - a.forks_count
+      const response = await axios.get(
+        `${functionUrl}?orgName=${encodeURIComponent(orgName)}`
       );
-      setRepos(sortedRepos);
+      console.log("response", response.data);
+      setRepos(response.data);
+
       setError(null);
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError;
-        setError(
-          `Failed to fetch repositories: ${axiosError.response?.status}`
-        );
+        setError(`Failed to fetch repositories: ${error.response?.status}`);
         setRepos([]);
       } else {
         setError(`Unexpected error: ${error}`);
@@ -68,24 +55,23 @@ export const ApiProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const fetchCommitsForRepo = async (
     orgName: string,
-    repoName: string,
-    token: string
+    repoName: string
   ): Promise<Commit[]> => {
-    const apiUrl = `https://api.github.com/repos/${orgName}/${repoName}/commits?per_page=30`;
+    const functionUrl = `${functionBaseUrl}/fetchCommitsForRepo`;
 
     try {
       setLoading(true);
-      const response = await axios.get(apiUrl, {
-        headers: {
-          Authorization: `token ${token}`,
-          Accept: "application/vnd.github.v3+json",
+      const response = await axios.get(functionUrl, {
+        params: {
+          orgName: orgName,
+          repoName: repoName,
         },
       });
 
       const commits: Commit[] = response.data.map((commit: any) => ({
-        author: commit.commit.author.name,
-        message: commit.commit.message,
-        url: commit.html_url,
+        author: commit.author,
+        message: commit.message,
+        url: commit.url,
       }));
 
       setError(null);
@@ -104,6 +90,7 @@ export const ApiProvider: FC<{ children: ReactNode }> = ({ children }) => {
       setLoading(false);
     }
   };
+
   return (
     <ApiContext.Provider
       value={{
