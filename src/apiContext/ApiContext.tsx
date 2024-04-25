@@ -36,7 +36,6 @@ export const ApiProvider: FC<{ children: ReactNode }> = ({ children }) => {
       const response = await axios.get(
         `${functionUrl}?orgName=${encodeURIComponent(orgName)}`
       );
-      console.log("response", response.data);
       setRepos(response.data);
 
       setError(null);
