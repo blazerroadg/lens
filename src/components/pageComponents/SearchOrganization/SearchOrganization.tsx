@@ -4,7 +4,6 @@ import ListWithDetails from "../../composeComponents/ListWithDetails/ListWithDet
 import { Repo } from "../../../../models/Repo";
 import { Commit } from "../../../../models/Commit";
 import { useApi } from "../../../apiContext/ApiContext";
-import { config } from "../../../config";
 
 const SearchOrganization = () => {
   const [orgName, setOrgName] = useState("");

@@ -6,15 +6,18 @@ export const StyledInputContainer = styled.div`
   border: 1px solid #ccc;
   border-radius: 10px;
   padding: 5px;
-  background-color:#fff;
-  width:30%;
+  background-color: #fff;
+  width: 30%;
+
+  @media (max-width: 768px) {
+    width: 80%;
+  }
 `;
 
 export const IconContainer = styled.div`
-  margin-right: 8px; 
+  margin-right: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color:#ccc;
+  color: #ccc;
 `;
-
