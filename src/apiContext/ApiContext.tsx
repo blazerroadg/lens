@@ -1,4 +1,11 @@
-import { createContext, useContext, useState, FC, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  FC,
+  ReactNode,
+  useMemo,
+} from "react";
 import axios, { AxiosError } from "axios";
 import { Repo } from "../../models/Repo";
 import { Commit } from "../../models/Commit";
@@ -90,17 +97,16 @@ export const ApiProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
 
-  return (
-    <ApiContext.Provider
-      value={{
-        repos,
-        loading,
-        error,
-        getReposSortedByForks,
-        fetchCommitsForRepo,
-      }}
-    >
-      {children}
-    </ApiContext.Provider>
+  const value = useMemo(
+    () => ({
+      repos,
+      loading,
+      error,
+      getReposSortedByForks,
+      fetchCommitsForRepo,
+    }),
+    [repos, loading, error, getReposSortedByForks, fetchCommitsForRepo]
   );
+
+  return <ApiContext.Provider value={value}>{children}</ApiContext.Provider>;
 };

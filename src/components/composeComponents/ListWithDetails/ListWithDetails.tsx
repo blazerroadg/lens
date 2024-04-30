@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
+
 import { Repo } from "../../../../models/Repo";
 import { Commit } from "../../../../models/Commit";
 import {
@@ -50,7 +52,7 @@ const Accordion: React.FC<Props> = ({ data, fetchDetails }) => {
             {expandedIndex === index && (
               <CommitDetailContainer>
                 {detailsData.map((commit, i) => (
-                  <CommitDetail key={i}>
+                  <CommitDetail key={uuidv4()}>
                     <Author>{commit.author}</Author>
                     <CommitMessage>{commit.message}</CommitMessage>
                     <CommitLink
