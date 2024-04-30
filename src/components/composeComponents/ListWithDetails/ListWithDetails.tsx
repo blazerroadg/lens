@@ -40,7 +40,7 @@ const Accordion: React.FC<Props> = ({ data, fetchDetails }) => {
   return (
     <AccordionContainer>
       {data.map((rowData, index) => (
-        <AccordionItem key={index}>
+        <AccordionItem key={uuidv4()}>
           <AccordionHeader onClick={() => toggleAccordion(index, rowData)}>
             <Title>{rowData.name}</Title>
             <Count>Count: {rowData.forks_count}</Count>
