@@ -1,19 +1,17 @@
 ```
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Controller, Get, Param } from '@nestjs/common';
 import { MenuService } from './menu.service';
-import { MenuController } from './menu.controller';
-import { MenuText } from './menu-text.entity';
-import { MenuParent } from './menu-parent.entity';
-import { GroupMenu } from './group-menu.entity';
-import { Security } from '../security/security.entity';
 
-@Module({
-  imports: [TypeOrmModule.forFeature([MenuText, MenuParent, GroupMenu, Security])],
-  providers: [MenuService],
-  controllers: [MenuController],
-})
-export class MenuModule {}
+@Controller('menu')
+export class MenuController {
+  constructor(private readonly menuService: MenuService) {}
+
+  @Get(':username/:parentId')
+  async getMenuHierarchy(@Param('username') username: string, @Param('parentId') parentId: number) {
+    return this.menuService.getMenuHierarchy(username, parentId);
+  }
+}
+
 
 ```
 
