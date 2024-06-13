@@ -1,127 +1,66 @@
+async getMenuHierarchy(username: string, parentId: number): Promise<any> {
+  // Step 1: Get group_ids for the user
+  const groupIds = await this.securityRepository.find({
+    where: { username },
+    select: ['group_id'],
+  });
 
+  const groupIdArray = groupIds.map(group => group.group_id);
 
-// security.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+  // Step 2: Get menu_ids for the group_ids using In operator
+  const menuIds = await this.groupMenuRepository.find({
+    where: { group_id: In(groupIdArray) },
+    select: ['menu_id'],
+  });
 
-@Entity()
-export class Security {
-  @PrimaryGeneratedColumn()
-  id: number;
+  const menuIdArray = menuIds.map(menu => menu.menu_id);
 
-  @Column()
-  username: string;
-
-  @Column()
-  group_id: number;
-}
-
-// group-menu.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
-
-@Entity()
-export class GroupMenu {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column()
-  group_id: number;
-
-  @Column()
-  menu_id: number;
-}
-
-// menu-text.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
-
-@Entity()
-export class MenuText {
-  @PrimaryGeneratedColumn()
-  menu_id: number;
-
-  @Column()
-  text: string;
-}
-
-// menu-parent.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
-
-@Entity()
-export class MenuParent {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column()
-  menu_id: number;
-
-  @Column()
-  parent_id: number;
-}
-
-
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Security } from './security.entity';
-import { GroupMenu } from './group-menu.entity';
-import { MenuText } from './menu-text.entity';
-import { MenuParent } from './menu-parent.entity';
-
-@Injectable()
-export class MenuService {
-  constructor(
-    @InjectRepository(Security)
-    private securityRepository: Repository<Security>,
-    @InjectRepository(GroupMenu)
-    private groupMenuRepository: Repository<GroupMenu>,
-    @InjectRepository(MenuText)
-    private menuTextRepository: Repository<MenuText>,
-    @InjectRepository(MenuParent)
-    private menuParentRepository: Repository<MenuParent>,
-  ) {}
-
-  async getMenuHierarchy(username: string, parentId: number): Promise<MenuText[]> {
-    // Step 1: Get group_ids for the user
-    const groupIds = await this.securityRepository.find({
-      where: { username },
-      select: ['group_id'],
-    });
-
-    const groupIdArray = groupIds.map((group) => group.group_id);
-
-    // Step 2: Get menu_ids for the group_ids
-    const menuIds = await this.groupMenuRepository.find({
-      where: { group_id: groupIdArray },
-      select: ['menu_id'],
-    });
-
-    const menuIdArray = menuIds.map((menu) => menu.menu_id);
-
-    // Step 3: Get hierarchical menu items starting from the given parent_id
-    const menuTexts = await this.menuTextRepository.createQueryBuilder('mt')
-      .innerJoin('menu_parent', 'mp1', 'mt.menu_id = mp1.menu_id')
-      .leftJoin('menu_parent', 'mp2', 'mp1.menu_id = mp2.parent_id')
-      .leftJoin('menu_parent', 'mp3', 'mp2.menu_id = mp3.parent_id')
-      .leftJoin('menu_parent', 'mp4', 'mp3.menu_id = mp4.parent_id')
-      .leftJoin('menu_parent', 'mp5', 'mp4.menu_id = mp5.parent_id')
-      .where('mp1.parent_id = :parentId', { parentId })
-      .andWhere('mt.menu_id IN (:...menuIdArray)', { menuIdArray })
+  // Step 3: Initialize the results array and a queue for BFS
+  const results = [];
+  const queue = [{ menu_id: parentId, parent_id: null }];
+  
+  // Step 4: Perform BFS to traverse the tree structure
+  while (queue.length > 0) {
+    const current = queue.shift();
+    
+    // Find all children of the current node
+    const children = await this.menuParentRepository.createQueryBuilder('mp')
+      .innerJoinAndSelect('menu_text', 'mt', 'mt.menu_id = mp.menu_id')
+      .where('mp.parent_id = :parentId', { parentId: current.menu_id })
+      .andWhere('mp.menu_id IN (:...menuIdArray)', { menuIdArray })
       .getMany();
-
-    return menuTexts;
+    
+    // Add current node to results
+    results.push({
+      menu_id: current.menu_id,
+      parent_id: current.parent_id,
+      text: current.text
+    });
+    
+    // Add children to the queue
+    for (const child of children) {
+      queue.push({
+        menu_id: child.menu_id,
+        parent_id: child.parent_id,
+        text: child.mt.text
+      });
+    }
   }
-}
-
-import { Controller, Get, Param } from '@nestjs/common';
-import { MenuService } from './menu.service';
-
-@Controller('menu')
-export class MenuController {
-  constructor(private readonly menuService: MenuService) {}
-
-  @Get(':username/:parentId')
-  async getMenuHierarchy(@Param('username') username: string, @Param('parentId') parentId: number) {
-    return this.menuService.getMenuHierarchy(username, parentId);
-  }
+  
+  // Convert results to tree format
+  const tree = [];
+  const map = {};
+  
+  results.forEach(node => {
+    map[node.menu_id] = { ...node, children: [] };
+    if (node.parent_id === null) {
+      tree.push(map[node.menu_id]);
+    } else {
+      map[node.parent_id].children.push(map[node.menu_id]);
+    }
+  });
+  
+  return tree;
 }
 
 
