@@ -1,68 +1,21 @@
-async getMenuHierarchy(username: string, parentId: number): Promise<any> {
-  // Step 1: Get group_ids for the user
-  const groupIds = await this.securityRepository.find({
-    where: { username },
-    select: ['group_id'],
-  });
+```
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { MenuService } from './menu.service';
+import { MenuController } from './menu.controller';
+import { MenuText } from './menu-text.entity';
+import { MenuParent } from './menu-parent.entity';
+import { GroupMenu } from './group-menu.entity';
+import { Security } from '../security/security.entity';
 
-  const groupIdArray = groupIds.map(group => group.group_id);
+@Module({
+  imports: [TypeOrmModule.forFeature([MenuText, MenuParent, GroupMenu, Security])],
+  providers: [MenuService],
+  controllers: [MenuController],
+})
+export class MenuModule {}
 
-  // Step 2: Get menu_ids for the group_ids using In operator
-  const menuIds = await this.groupMenuRepository.find({
-    where: { group_id: In(groupIdArray) },
-    select: ['menu_id'],
-  });
-
-  const menuIdArray = menuIds.map(menu => menu.menu_id);
-
-  // Step 3: Initialize the results array and a queue for BFS
-  const results = [];
-  const queue = [{ menu_id: parentId, parent_id: null }];
-  
-  // Step 4: Perform BFS to traverse the tree structure
-  while (queue.length > 0) {
-    const current = queue.shift();
-    
-    // Find all children of the current node
-    const children = await this.menuParentRepository.createQueryBuilder('mp')
-      .innerJoinAndSelect('menu_text', 'mt', 'mt.menu_id = mp.menu_id')
-      .where('mp.parent_id = :parentId', { parentId: current.menu_id })
-      .andWhere('mp.menu_id IN (:...menuIdArray)', { menuIdArray })
-      .getMany();
-    
-    // Add current node to results
-    results.push({
-      menu_id: current.menu_id,
-      parent_id: current.parent_id,
-      text: current.text
-    });
-    
-    // Add children to the queue
-    for (const child of children) {
-      queue.push({
-        menu_id: child.menu_id,
-        parent_id: child.parent_id,
-        text: child.mt.text
-      });
-    }
-  }
-  
-  // Convert results to tree format
-  const tree = [];
-  const map = {};
-  
-  results.forEach(node => {
-    map[node.menu_id] = { ...node, children: [] };
-    if (node.parent_id === null) {
-      tree.push(map[node.menu_id]);
-    } else {
-      map[node.parent_id].children.push(map[node.menu_id]);
-    }
-  });
-  
-  return tree;
-}
-
+```
 
 
 # Getting Started with Create React App
