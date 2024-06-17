@@ -1,22 +1,51 @@
 ```
-async getUniqueUsernames(filter: string): Promise<string[]> {
-  const query = this.securityRepository
-    .createQueryBuilder('security')
-    .select('DISTINCT security.username')
-    .where('security.username LIKE :filter', { filter: `${filter}%` })
-    .limit(10)
-    .getQuery();
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { MenuParent } from './menu-parent.entity';
+import { GroupMenu } from './group-menu.entity';
+import { Group } from './group.entity';
 
-  console.log('Generated Query:', query);
+@Injectable()
+export class MenuService {
+  constructor(
+    @InjectRepository(MenuParent)
+    private menuParentRepository: Repository<MenuParent>,
+    @InjectRepository(GroupMenu)
+    private groupMenuRepository: Repository<GroupMenu>,
+    @InjectRepository(Group)
+    private groupRepository: Repository<Group>,
+  ) {}
 
-  return this.securityRepository
-    .createQueryBuilder('security')
-    .select('DISTINCT security.username')
-    .where('security.username LIKE :filter', { filter: `${filter}%` })
-    .limit(10)
-    .getRawMany()
-    .then(results => results.map(result => result.username));
+  async getGroupsByParentId(parentId: number): Promise<any> {
+    const menus = await this.getMenusByParentId(parentId);
+    const groupIds = menus.map(menu => menu.groupId);
+    const groups = await this.groupRepository.findByIds(groupIds);
+    return groups;
+  }
+
+  private async getMenusByParentId(parentId: number): Promise<GroupMenu[]> {
+    const parentMenus = await this.menuParentRepository.find({ where: { parentId } });
+    let allMenus: GroupMenu[] = [];
+
+    for (const parentMenu of parentMenus) {
+      const childMenus = await this.groupMenuRepository.find({ where: { menuId: parentMenu.menuId } });
+      allMenus = [...allMenus, ...childMenus];
+
+      // Recursively get child menus
+      const childMenuParents = await this.menuParentRepository.find({ where: { parentId: parentMenu.menuId } });
+      if (childMenuParents.length > 0) {
+        for (const childMenuParent of childMenuParents) {
+          const childMenusRecursive = await this.getMenusByParentId(childMenuParent.menuId);
+          allMenus = [...allMenus, ...childMenusRecursive];
+        }
+      }
+    }
+
+    return allMenus;
+  }
 }
+
 
 
 ```
