@@ -1,12 +1,7 @@
 ```
-async getUniqueUsernames(filter: string): Promise<string[]> {
-    return this.securityRepository
-      .createQueryBuilder('security')
-      .select('DISTINCT security.username')
-      .where('security.username LIKE :filter', { filter: `${filter}%` })
-      .limit(10)
-      .getRawMany()
-      .then(results => results.map(result => result.security_username));
+@Get('usernames')
+  async getUniqueUsernames(@Query('filter') filter: string): Promise<string[]> {
+    return this.securityService.getUniqueUsernames(filter);
   }
 
 
