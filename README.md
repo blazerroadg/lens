@@ -1,9 +1,13 @@
 ```
-@Get('groups/:parentId')
-  async getGroupsByParentId(@Param('parentId') parentId: number): Promise<any> {
-    return this.menuService.getGroupsByParentId(parentId);
+ async addSecurity(username: string, usertype: string): Promise<Security> {
+    const newSecurity = this.securityRepository.create({ username, usertype });
+    return this.securityRepository.save(newSecurity);
   }
 
+@Post('security')
+  async addSecurity(@Body() createSecurityDto: { username: string, usertype: string }): Promise<any> {
+    return this.menuService.addSecurity(createSecurityDto.username, createSecurityDto.usertype);
+  }
 
 ```
 
