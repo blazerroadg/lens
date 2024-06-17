@@ -1,51 +1,8 @@
 ```
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { MenuParent } from './menu-parent.entity';
-import { GroupMenu } from './group-menu.entity';
-import { Group } from './group.entity';
-
-@Injectable()
-export class MenuService {
-  constructor(
-    @InjectRepository(MenuParent)
-    private menuParentRepository: Repository<MenuParent>,
-    @InjectRepository(GroupMenu)
-    private groupMenuRepository: Repository<GroupMenu>,
-    @InjectRepository(Group)
-    private groupRepository: Repository<Group>,
-  ) {}
-
-  async getGroupsByParentId(parentId: number): Promise<any> {
-    const menus = await this.getMenusByParentId(parentId);
-    const groupIds = menus.map(menu => menu.groupId);
-    const groups = await this.groupRepository.findByIds(groupIds);
-    return groups;
+@Get('groups/:parentId')
+  async getGroupsByParentId(@Param('parentId') parentId: number): Promise<any> {
+    return this.menuService.getGroupsByParentId(parentId);
   }
-
-  private async getMenusByParentId(parentId: number): Promise<GroupMenu[]> {
-    const parentMenus = await this.menuParentRepository.find({ where: { parentId } });
-    let allMenus: GroupMenu[] = [];
-
-    for (const parentMenu of parentMenus) {
-      const childMenus = await this.groupMenuRepository.find({ where: { menuId: parentMenu.menuId } });
-      allMenus = [...allMenus, ...childMenus];
-
-      // Recursively get child menus
-      const childMenuParents = await this.menuParentRepository.find({ where: { parentId: parentMenu.menuId } });
-      if (childMenuParents.length > 0) {
-        for (const childMenuParent of childMenuParents) {
-          const childMenusRecursive = await this.getMenusByParentId(childMenuParent.menuId);
-          allMenus = [...allMenus, ...childMenusRecursive];
-        }
-      }
-    }
-
-    return allMenus;
-  }
-}
-
 
 
 ```
