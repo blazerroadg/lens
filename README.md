@@ -1,8 +1,22 @@
 ```
-@Get('usernames')
-  async getUniqueUsernames(@Query('filter') filter: string): Promise<string[]> {
-    return this.securityService.getUniqueUsernames(filter);
-  }
+async getUniqueUsernames(filter: string): Promise<string[]> {
+  const query = this.securityRepository
+    .createQueryBuilder('security')
+    .select('DISTINCT security.username')
+    .where('security.username LIKE :filter', { filter: `${filter}%` })
+    .limit(10)
+    .getQuery();
+
+  console.log('Generated Query:', query);
+
+  return this.securityRepository
+    .createQueryBuilder('security')
+    .select('DISTINCT security.username')
+    .where('security.username LIKE :filter', { filter: `${filter}%` })
+    .limit(10)
+    .getRawMany()
+    .then(results => results.map(result => result.username));
+}
 
 
 ```
