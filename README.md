@@ -1,10 +1,7 @@
 ```
- async addSecurity(username: string, usertype: string): Promise<Security> {
-    const newSecurity = this.securityRepository.create({ username, usertype });
-    return this.securityRepository.save(newSecurity);
-  }
-
-@Post('security')
+  @Post('security')
+  @ApiOperation({ summary: 'Add a new security entry' })
+  @ApiBody({ schema: { properties: { username: { type: 'string' }, usertype: { type: 'string' } } } })
   async addSecurity(@Body() createSecurityDto: { username: string, usertype: string }): Promise<any> {
     return this.menuService.addSecurity(createSecurityDto.username, createSecurityDto.usertype);
   }
