@@ -1,16 +1,13 @@
 ```
-import { Controller, Get, Param } from '@nestjs/common';
-import { MenuService } from './menu.service';
-
-@Controller('menu')
-export class MenuController {
-  constructor(private readonly menuService: MenuService) {}
-
-  @Get(':username/:parentId')
-  async getMenuHierarchy(@Param('username') username: string, @Param('parentId') parentId: number) {
-    return this.menuService.getMenuHierarchy(username, parentId);
+async getUniqueUsernames(filter: string): Promise<string[]> {
+    return this.securityRepository
+      .createQueryBuilder('security')
+      .select('DISTINCT security.username')
+      .where('security.username LIKE :filter', { filter: `${filter}%` })
+      .limit(10)
+      .getRawMany()
+      .then(results => results.map(result => result.security_username));
   }
-}
 
 
 ```
