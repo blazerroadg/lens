@@ -1,66 +1,46 @@
 ```
- // src/config/configuration.ts
-export default () => ({
-  sso: {
-    pingFedEnv: process.env.pingFedEnv,
-    pingFedClient: process.env.pingFedClient,
-    pingFedClientHash: process.env.pingFedClientHash,
-    pingFedRedirectURL: process.env.pingFedRedirectURL,
-    pingFedCookieName: process.env.pingFedCookieName,
-    clientCookieName: process.env.clientCookieName,
-    cookieDomain: process.env.cookieDomain,
-    redirectRoute: process.env.redirectRoute,
-    redirectWFRoute: process.env.redirectWFRoute,
-    akeylessAccessId: process.env.akeylessAccessId,
-    akeylessKey: process.env.akeylessKey,
-  },
-  port: parseInt(process.env.PORT, 10) || 3000,
-  database: {
-    server: process.env.MSSQL_CA_WEB_SERVER,
-    port: parseInt(process.env.MSSQL_CA_WEB_PORT, 10) || 1433,
-    database: process.env.MSSQL_CA_WEB_DATABASE,
-    domain: process.env.MSSQL_CA_WEB_DOMAIN,
-    user: process.env.MSSQL_CA_WEB_USERID,
-    password: process.env.MSSQL_CA_WEB_PASSWORD,
-  },
-});
+async getGroupsByParentId(parentId: number): Promise<any> {
+    const menus = await this.getMenusByParentId(parentId);
+    const groupIds = menus.map(menu => menu.group_id);
+    let groups = await this.groupRepository.findBy({ id: In(groupIds) });
 
+    // Use map and Promise.all to fetch dc_type values in parallel
+    groups = await Promise.all(groups.map(async group => {
+        const dcTypes = await this.securityRepository.find({
+            select: ['dc_type'],
+            where: { group_id: group.id }
+        });
+        group.dc_types = dcTypes.map(dc => dc.dc_type);
+        return group;
+    }));
 
-// src/config/config.module.ts
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import configuration from './configuration';
+    return groups;
+}
 
-@Module({
-  imports: [
-    ConfigModule.forRoot({
-      load: [configuration],
-      isGlobal: true, // Makes the ConfigService available globally
-    }),
-  ],
-  providers: [ConfigService],
-  exports: [ConfigService],
-})
-export class CustomConfigModule {}
+async getGroupsByParentIdByUsername(parentId: number, username: string): Promise<any> {
+    const menus = await this.getMenusByParentId(parentId);
+    const groupIds = menus.map(menu => menu.group_id);
+    let groups = await this.securityRepository.findBy({ group_id: In(groupIds) });
 
-// src/app.module.ts
-import { Module } from '@nestjs/common';
-import { CustomConfigModule } from './config/config.module';
-import { ConfigService } from '@nestjs/config';
+    // Use map and Promise.all to fetch dc_type values in parallel
+    groups = await Promise.all(groups.map(async group => {
+        const dcTypes = await this.securityRepository.find({
+            select: ['dc_type'],
+            where: { group_id: group.group_id }
+        });
+        group.dc_types = dcTypes.map(dc => dc.dc_type);
+        return group;
+    }));
 
-@Module({
-  imports: [CustomConfigModule],
-})
-export class AppModule {
-  constructor(private configService: ConfigService) {
-    const ssoConfig = this.configService.get('sso');
-    const dbConfig = this.configService.get('database');
-    const appPort = this.configService.get<number>('port');
+    return groups;
+}
 
-    console.log('SSO Configuration:', ssoConfig);
-    console.log('Database Configuration:', dbConfig);
-    console.log('Application Port:', appPort);
-  }
+async getGroupsFilter(parentId: number, username: string): Promise<any> {
+    const groups = await this.getGroupsByParentId(parentId);
+
+    // Further processing if needed
+
+    return groups;
 }
 
 
