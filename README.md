@@ -1,10 +1,68 @@
 ```
-  @Post('security')
-  @ApiOperation({ summary: 'Add a new security entry' })
-  @ApiBody({ schema: { properties: { username: { type: 'string' }, usertype: { type: 'string' } } } })
-  async addSecurity(@Body() createSecurityDto: { username: string, usertype: string }): Promise<any> {
-    return this.menuService.addSecurity(createSecurityDto.username, createSecurityDto.usertype);
+ // src/config/configuration.ts
+export default () => ({
+  sso: {
+    pingFedEnv: process.env.pingFedEnv,
+    pingFedClient: process.env.pingFedClient,
+    pingFedClientHash: process.env.pingFedClientHash,
+    pingFedRedirectURL: process.env.pingFedRedirectURL,
+    pingFedCookieName: process.env.pingFedCookieName,
+    clientCookieName: process.env.clientCookieName,
+    cookieDomain: process.env.cookieDomain,
+    redirectRoute: process.env.redirectRoute,
+    redirectWFRoute: process.env.redirectWFRoute,
+    akeylessAccessId: process.env.akeylessAccessId,
+    akeylessKey: process.env.akeylessKey,
+  },
+  port: parseInt(process.env.PORT, 10) || 3000,
+  database: {
+    server: process.env.MSSQL_CA_WEB_SERVER,
+    port: parseInt(process.env.MSSQL_CA_WEB_PORT, 10) || 1433,
+    database: process.env.MSSQL_CA_WEB_DATABASE,
+    domain: process.env.MSSQL_CA_WEB_DOMAIN,
+    user: process.env.MSSQL_CA_WEB_USERID,
+    password: process.env.MSSQL_CA_WEB_PASSWORD,
+  },
+});
+
+
+// src/config/config.module.ts
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import configuration from './configuration';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      load: [configuration],
+      isGlobal: true, // Makes the ConfigService available globally
+    }),
+  ],
+  providers: [ConfigService],
+  exports: [ConfigService],
+})
+export class CustomConfigModule {}
+
+// src/app.module.ts
+import { Module } from '@nestjs/common';
+import { CustomConfigModule } from './config/config.module';
+import { ConfigService } from '@nestjs/config';
+
+@Module({
+  imports: [CustomConfigModule],
+})
+export class AppModule {
+  constructor(private configService: ConfigService) {
+    const ssoConfig = this.configService.get('sso');
+    const dbConfig = this.configService.get('database');
+    const appPort = this.configService.get<number>('port');
+
+    console.log('SSO Configuration:', ssoConfig);
+    console.log('Database Configuration:', dbConfig);
+    console.log('Application Port:', appPort);
   }
+}
+
 
 ```
 
