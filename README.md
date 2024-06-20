@@ -1,47 +1,30 @@
 ```
-async getGroupsByParentId(parentId: number): Promise<any> {
-    const menus = await this.getMenusByParentId(parentId);
-    const groupIds = menus.map(menu => menu.group_id);
-    let groups = await this.groupRepository.findBy({ id: In(groupIds) });
+async removeRecordByUsernameAndGroupId(username: string, groupId: number): Promise<void> {
+    const record = await this.userRecordRepository.findOne({ where: { username, groupId } });
+    if (record) {
+      await this.userRecordRepository.remove(record);
+    } else {
+      throw new Error('Record not found');
+    }
+  }
 
-    // Use map and Promise.all to fetch dc_type values in parallel
-    groups = await Promise.all(groups.map(async group => {
-        const dcTypes = await this.securityRepository.find({
-            select: ['dc_type'],
-            where: { group_id: group.id }
-        });
-        group.dc_types = dcTypes.map(dc => dc.dc_type);
-        return group;
-    }));
-
-    return groups;
-}
-
-async getGroupsByParentIdByUsername(parentId: number, username: string): Promise<any> {
-    const menus = await this.getMenusByParentId(parentId);
-    const groupIds = menus.map(menu => menu.group_id);
-    let groups = await this.securityRepository.findBy({ group_id: In(groupIds) });
-
-    // Use map and Promise.all to fetch dc_type values in parallel
-    groups = await Promise.all(groups.map(async group => {
-        const dcTypes = await this.securityRepository.find({
-            select: ['dc_type'],
-            where: { group_id: group.group_id }
-        });
-        group.dc_types = dcTypes.map(dc => dc.dc_type);
-        return group;
-    }));
-
-    return groups;
-}
-
-async getGroupsFilter(parentId: number, username: string): Promise<any> {
-    const groups = await this.getGroupsByParentId(parentId);
-
-    // Further processing if needed
-
-    return groups;
-}
+@Delete('remove')
+  @ApiOperation({ summary: 'Remove a record by username and group ID' })
+  @ApiResponse({ status: 200, description: 'Record removed successfully' })
+  @ApiResponse({ status: 404, description: 'Record not found' })
+  @ApiQuery({ name: 'username', type: String, required: true })
+  @ApiQuery({ name: 'groupId', type: Number, required: true })
+  async removeRecord(
+    @Query('username') username: string,
+    @Query('groupId', ParseIntPipe) groupId: number,
+  ) {
+    try {
+      await this.securityService.removeRecordByUsernameAndGroupId(username, groupId);
+      return { message: 'Record removed successfully' };
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+    }
+  }
 
 
 ```
