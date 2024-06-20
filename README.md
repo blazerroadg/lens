@@ -1,52 +1,10 @@
 ```
-@Controller('security')
-export class SecurityController {
-  constructor(private readonly securityService: SecurityService) {}
-
-  @Post()
-  @ApiOperation({ summary: 'Add new security entries' })
-  @ApiBody({
-    schema: {
-      properties: {
-        username: { type: 'string' },
-        group_id: { type: 'number' },
-        datafilters: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              datatype: { type: 'string' },
-              datafilter: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
-  })
-  async addSecurity(
-    @Body() createSecurityDto: CreateSecurityDto
-  ): Promise<any> {
-    const { username, group_id, datafilters } = createSecurityDto;
-    await this.securityService.addSecurityEntries(username, group_id, datafilters);
-    return { message: 'Security entries added successfully' };
-  }
-}
-
-
-‍async addSecurityEntries(username: string, groupId: number, datafilters: DataFilter[]): Promise<any> {
-    const entries = datafilters.map(filter => ({
-      username: username,
-      group_id: groupId,
-      datatype: filter.datatype,
-      datafilter: filter.datafilter
-    }));
-
-    // Use save or insert method to add entries to the database
-    for (const entry of entries) {
-      await this.securityRepository.save(entry);
+async removeRecordsByUsernameAndGroupId(username: string, groupId: number): Promise<void> {
+    const result = await this.userRecordRepository.delete({ username, groupId });
+    if (result.affected === 0) {
+      throw new Error('No records found to delete');
     }
   }
-
 
 ```
 
