@@ -1,28 +1,49 @@
 ```
-async removeRecordByUsernameAndGroupId(username: string, groupId: number): Promise<void> {
-    const record = await this.userRecordRepository.findOne({ where: { username, groupId } });
-    if (record) {
-      await this.userRecordRepository.remove(record);
-    } else {
-      throw new Error('Record not found');
-    }
-  }
+@Controller('security')
+export class SecurityController {
+  constructor(private readonly securityService: SecurityService) {}
 
-@Delete('remove')
-  @ApiOperation({ summary: 'Remove a record by username and group ID' })
-  @ApiResponse({ status: 200, description: 'Record removed successfully' })
-  @ApiResponse({ status: 404, description: 'Record not found' })
-  @ApiQuery({ name: 'username', type: String, required: true })
-  @ApiQuery({ name: 'groupId', type: Number, required: true })
-  async removeRecord(
-    @Query('username') username: string,
-    @Query('groupId', ParseIntPipe) groupId: number,
-  ) {
-    try {
-      await this.securityService.removeRecordByUsernameAndGroupId(username, groupId);
-      return { message: 'Record removed successfully' };
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+  @Post()
+  @ApiOperation({ summary: 'Add new security entries' })
+  @ApiBody({
+    schema: {
+      properties: {
+        username: { type: 'string' },
+        group_id: { type: 'number' },
+        datafilters: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              datatype: { type: 'string' },
+              datafilter: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+  })
+  async addSecurity(
+    @Body() createSecurityDto: CreateSecurityDto
+  ): Promise<any> {
+    const { username, group_id, datafilters } = createSecurityDto;
+    await this.securityService.addSecurityEntries(username, group_id, datafilters);
+    return { message: 'Security entries added successfully' };
+  }
+}
+
+
+‍async addSecurityEntries(username: string, groupId: number, datafilters: DataFilter[]): Promise<any> {
+    const entries = datafilters.map(filter => ({
+      username: username,
+      group_id: groupId,
+      datatype: filter.datatype,
+      datafilter: filter.datafilter
+    }));
+
+    // Use save or insert method to add entries to the database
+    for (const entry of entries) {
+      await this.securityRepository.save(entry);
     }
   }
 
