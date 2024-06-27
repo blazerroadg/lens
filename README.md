@@ -1,12 +1,13 @@
 ```
 @ApiBody({
   schema: {
-    properties: {
-      username: { type: 'string' },
-      group_id: { type: 'number' },
-      datafilters: {
-        type: 'array',
-        items: {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        username: { type: 'string' },
+        group_id: { type: 'number' },
+        datafilters: {
           type: 'array',
           items: {
             type: 'object',
@@ -21,11 +22,11 @@
   }
 })
 
-async addSecurity(@Body() createSecurityDto: CreateSecurityDto): Promise<any> {
-  const { username, group_id, datafilters } = createSecurityDto;
+async addSecurity(@Body() createSecurityDtos: CreateSecurityDto[]): Promise<any> {
+  for (const createSecurityDto of createSecurityDtos) {
+    const { username, group_id, datafilters } = createSecurityDto;
 
-  for (const filterList of datafilters) {
-    const entries = filterList.map(filter => ({
+    const entries = datafilters.map(filter => ({
       username,
       group_id,
       datatype: filter.datatype,
@@ -39,7 +40,6 @@ async addSecurity(@Body() createSecurityDto: CreateSecurityDto): Promise<any> {
 
   return { message: 'Security entries added successfully' };
 }
-
 ر
 
 ```
