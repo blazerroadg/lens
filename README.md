@@ -1,46 +1,47 @@
 ```
-@ApiBody({
-  schema: {
-    type: 'array',
-    items: {
-      type: 'object',
-      properties: {
-        username: { type: 'string' },
-        group_id: { type: 'number' },
-        datafilters: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              datatype: { type: 'string' },
-              datafilter: { type: 'string' }
-            }
-          }
-        }
+@Post()
+  @ApiOperation({ summary: 'Add new security entries' })
+  @ApiBody({
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          username: { type: 'string' },
+          group_id: { type: 'number' },
+          datafilters: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                datatype: { type: 'string' },
+                datafilter: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async addSecurity(@Body() createSecurityDtos: CreateSecurityDto[]): Promise<any> {
+    for (const createSecurityDto of createSecurityDtos) {
+      const { username, group_id, datafilters } = createSecurityDto;
+
+      const entries = datafilters.map(filter => ({
+        username,
+        group_id,
+        datatype: filter.datatype,
+        datafilter: filter.datafilter,
+      }));
+
+      for (const entry of entries) {
+        await this.securityService.save(entry);
       }
     }
+
+    return { message: 'Security entries added successfully' };
   }
-})
-
-async addSecurity(@Body() createSecurityDtos: CreateSecurityDto[]): Promise<any> {
-  for (const createSecurityDto of createSecurityDtos) {
-    const { username, group_id, datafilters } = createSecurityDto;
-
-    const entries = datafilters.map(filter => ({
-      username,
-      group_id,
-      datatype: filter.datatype,
-      datafilter: filter.datafilter,
-    }));
-
-    for (const entry of entries) {
-      await this.securityRepository.save(entry);
-    }
-  }
-
-  return { message: 'Security entries added successfully' };
 }
-ر
 
 ```
 
