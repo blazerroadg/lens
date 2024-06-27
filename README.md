@@ -1,10 +1,46 @@
 ```
-async removeRecordsByUsernameAndGroupId(username: string, groupId: number): Promise<void> {
-    const result = await this.userRecordRepository.delete({ username, groupId });
-    if (result.affected === 0) {
-      throw new Error('No records found to delete');
+@ApiBody({
+  schema: {
+    properties: {
+      username: { type: 'string' },
+      group_id: { type: 'number' },
+      datafilters: {
+        type: 'array',
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              datatype: { type: 'string' },
+              datafilter: { type: 'string' }
+            }
+          }
+        }
+      }
     }
   }
+})
+
+async addSecurity(@Body() createSecurityDto: CreateSecurityDto): Promise<any> {
+  const { username, group_id, datafilters } = createSecurityDto;
+
+  for (const filterList of datafilters) {
+    const entries = filterList.map(filter => ({
+      username,
+      group_id,
+      datatype: filter.datatype,
+      datafilter: filter.datafilter,
+    }));
+
+    for (const entry of entries) {
+      await this.securityRepository.save(entry);
+    }
+  }
+
+  return { message: 'Security entries added successfully' };
+}
+
+ر
 
 ```
 
