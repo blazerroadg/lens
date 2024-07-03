@@ -1,79 +1,30 @@
 ```
-// auth/oauth2.strategy.ts
-import { Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-oauth2';
-import * as jwtDecode from 'jwt-decode';
-import { AuthService } from './auth.service';
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+} from '@nestjs/common';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 @Injectable()
-export class OAuth2Strategy extends PassportStrategy(Strategy, 'oauth2') {
-  constructor(private readonly authService: AuthService) {
-    super({
-      authorizationURL: `https://pfed${process.env.pingFedEnv}.walmart.com/as/authorization.oauth2`,
-      tokenURL: `https://pfed${process.env.pingFedEnv}.walmart.com/as/token.oauth2`,
-      clientID: process.env.pingFedClient,
-      clientSecret: process.env.pingFedClientHash,
-      callbackURL: process.env.pingFedRedirectURL,
-      proxy: true,
-    });
-  }
+export class LoggingInterceptor implements NestInterceptor {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    const request = context.switchToHttp().getRequest();
+    const response = context.switchToHttp().getResponse();
+    const { method, url } = request;
 
-  async validate(accessToken: string, refreshToken: string, profile: any, done: Function) {
-    console.log('I am inside passport USE');
-    console.log('ENV: ' + process.env.pingFedEnv);
-    console.log('Token: ' + accessToken);
-    const decodedToken = jwtDecode(accessToken);
-    console.log('userId: ', decodedToken['userid']);
-    const user = { userid: decodedToken['userid'], accessToken };
+    console.log(`Incoming Request: ${method} ${url}`);
 
-    return done(null, user);
+    return next.handle().pipe(
+      tap((data) => {
+        console.log(`Outgoing Response: ${method} ${url}`, data);
+      }),
+    );
   }
 }
 
-
-// auth/auth.service.ts
-import { Injectable } from '@nestjs/common';
-
-@Injectable()
-export class AuthService {
-  // Implement your custom logic here if needed
-}
-
-
-// auth/auth.module.ts
-import { Module } from '@nestjs/common';
-import { PassportModule } from '@nestjs/passport';
-import { AuthService } from './auth.service';
-import { OAuth2Strategy } from './oauth2.strategy';
-
-@Module({
-  imports: [PassportModule.register({ defaultStrategy: 'oauth2' })],
-  providers: [AuthService, OAuth2Strategy],
-  exports: [AuthService],
-})
-export class AuthModule {}
-
-
-// auth/auth.controller.ts
-import { Controller, Get, UseGuards, Req } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-
-@Controller('auth')
-export class AuthController {
-  @Get('login')
-  @UseGuards(AuthGuard('oauth2'))
-  login() {
-    // Initiates OAuth2 login flow
-  }
-
-  @Get('callback')
-  @UseGuards(AuthGuard('oauth2'))
-  callback(@Req() req) {
-    // Handles the callback from the OAuth2 provider
-    return req.user;
-  }
-}
 
 
 ```
