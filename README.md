@@ -1,29 +1,35 @@
 ```
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-} from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+class RemoveRecordDto {
+  @IsString()
+  username: string;
 
-@Injectable()
-export class LoggingInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest();
-    const response = context.switchToHttp().getResponse();
-    const { method, url } = request;
+  @IsInt()
+  @Type(() => Number)
+  groupId: number;
 
-    console.log(`Incoming Request: ${method} ${url}`);
-
-    return next.handle().pipe(
-      tap((data) => {
-        console.log(`Outgoing Response: ${method} ${url}`, data);
-      }),
-    );
-  }
+  @IsString()
+  datafilter: string;
 }
+
+@Controller('security')
+export class SecurityController {
+  @Delete('datafilter')
+  @ApiOperation({ summary: 'Remove records by username, group ID, and data filter' })
+  @ApiResponse({ status: 200, description: 'Records removed successfully' })
+  @ApiResponse({ status: 404, description: 'One or more records not found' })
+  async removeRecords(
+    @Body() removeRecordsDto: RemoveRecordDto[],
+    @Res() res: Response
+  ) {
+    try {
+      for (const record of removeRecordsDto) {
+        await this.removeDataFilterRecord(record.username, record.groupId, record.datafilter);
+      }
+      return res.status(HttpStatus.OK).json({ message: 'Records removed successfully' });
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+    }
+  }
 
 
 
