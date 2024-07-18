@@ -1,35 +1,6 @@
 ```
-class RemoveRecordDto {
-  @IsString()
-  username: string;
+const uniqueData = Array.from(new Set(datafilter.map(d => JSON.stringify({ datafilter: d.datafilter, datatype: d.datatype })))).map(d => JSON.parse(d));
 
-  @IsInt()
-  @Type(() => Number)
-  groupId: number;
-
-  @IsString()
-  datafilter: string;
-}
-
-@Controller('security')
-export class SecurityController {
-  @Delete('datafilter')
-  @ApiOperation({ summary: 'Remove records by username, group ID, and data filter' })
-  @ApiResponse({ status: 200, description: 'Records removed successfully' })
-  @ApiResponse({ status: 404, description: 'One or more records not found' })
-  async removeRecords(
-    @Body() removeRecordsDto: RemoveRecordDto[],
-    @Res() res: Response
-  ) {
-    try {
-      for (const record of removeRecordsDto) {
-        await this.removeDataFilterRecord(record.username, record.groupId, record.datafilter);
-      }
-      return res.status(HttpStatus.OK).json({ message: 'Records removed successfully' });
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-    }
-  }
 
 
 
