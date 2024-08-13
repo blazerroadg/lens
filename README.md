@@ -1,5 +1,33 @@
 ```
-const uniqueData = Array.from(new Set(datafilter.map(d => JSON.stringify({ datafilter: d.datafilter, datatype: d.datatype })))).map(d => JSON.parse(d));
+import React from 'react';
+import { useField, useFormikContext } from 'formik';
+import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
+import { TextField } from '@mui/material';
+
+const FormikDatePicker = ({ name, ...otherProps }) => {
+  const { setFieldValue } = useFormikContext();
+  const [field, meta] = useField(name);
+
+  const handleChange = (date) => {
+    setFieldValue(name, date);
+  };
+
+  const configDatePicker = {
+    ...field,
+    ...otherProps,
+    fullWidth: true,
+    onChange: handleChange,
+  };
+
+  if (meta && meta.touched && meta.error) {
+    configDatePicker.error = true;
+    configDatePicker.helperText = meta.error;
+  }
+
+  return <DesktopDatePicker {...configDatePicker} renderInput={(params) => <TextField {...params} />} />;
+};
+
+export default FormikDatePicker;
 
 
 
