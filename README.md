@@ -1,33 +1,36 @@
 ```
 import React from 'react';
-import { useField, useFormikContext } from 'formik';
-import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
-import { TextField } from '@mui/material';
+import Fab from '@mui/material/Fab';
+import AddIcon from '@mui/icons-material/Add';
+import { makeStyles } from '@mui/styles';
 
-const FormikDatePicker = ({ name, ...otherProps }) => {
-  const { setFieldValue } = useFormikContext();
-  const [field, meta] = useField(name);
+// Define styles for the FAB
+const useStyles = makeStyles({
+  fab: {
+    position: 'fixed',
+    bottom: '16px',
+    right: '16px',
+  },
+});
 
-  const handleChange = (date) => {
-    setFieldValue(name, date);
-  };
+// Define the props interface
+interface FloatingActionButtonProps {
+  onClick: () => void; // Action to perform when the button is clicked
+}
 
-  const configDatePicker = {
-    ...field,
-    ...otherProps,
-    fullWidth: true,
-    onChange: handleChange,
-  };
+// Functional component with TypeScript
+const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ onClick }) => {
+  const classes = useStyles();
 
-  if (meta && meta.touched && meta.error) {
-    configDatePicker.error = true;
-    configDatePicker.helperText = meta.error;
-  }
-
-  return <DesktopDatePicker {...configDatePicker} renderInput={(params) => <TextField {...params} />} />;
+  return (
+    <Fab color="primary" aria-label="add" className={classes.fab} onClick={onClick}>
+      <AddIcon />
+    </Fab>
+  );
 };
 
-export default FormikDatePicker;
+export default FloatingActionButton;
+
 
 
 
