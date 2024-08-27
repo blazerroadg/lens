@@ -1,75 +1,30 @@
 ```
 
 
-
-import React from 'react';
-import { Formik, Field, Form, FormikProps } from 'formik';
-import {
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Checkbox,
-  ListItemText,
-  Button,
-} from '@mui/material';
-import { Select as FormikSelect } from 'formik-mui';
-
-interface FormValues {
-  options: string[];
-}
-
-const optionsList = ['Option 1', 'Option 2', 'Option 3', 'Option 4'];
-
-const MultiSelectDropdownForm: React.FC = () => {
-  const initialValues: FormValues = { options: [] };
-
-  return (
-    <Formik
-      initialValues={initialValues}
-      onSubmit={(values) => {
-        console.log('Selected values:', values);
-      }}
-    >
-      {(props: FormikProps<FormValues>) => (
-        <Form>
-          <FormControl fullWidth variant="outlined">
-            <InputLabel id="multi-select-label">Select Options</InputLabel>
-            <Field
-              component={FormikSelect}
-              name="options"
-              label="Select Options"
-              multiple
-              inputProps={{
-                id: 'multi-select-label',
-              }}
-              renderValue={(selected: string[]) => selected.join(', ')}
-            >
-              {optionsList.map((option) => (
-                <MenuItem key={option} value={option}>
-                  <Checkbox
-                    checked={props.values.options.indexOf(option) > -1}
-                  />
-                  <ListItemText primary={option} />
-                </MenuItem>
-              ))}
-            </Field>
-          </FormControl>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            style={{ marginTop: '16px' }}
-          >
-            Submit
-          </Button>
-        </Form>
-      )}
-    </Formik>
-  );
-};
-
-export default MultiSelectDropdownForm;
+<Field name="fruit">
+        {({ field }) => (
+          <Autocomplete
+            {...field}
+            value={values.fruit}
+            onChange={(event, newValue) => {
+              setFieldValue('fruit', newValue);
+            }}
+            onInputChange={(event, newInputValue) => {
+              fetchOptions(newInputValue);
+            }}
+            options={options}
+            getOptionLabel={(option) => option.label || ''}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Select a fruit"
+                error={touched.fruit && Boolean(errors.fruit)}
+                helperText={touched.fruit && errors.fruit}
+              />
+            )}
+          />
+        )}
+      </Field>
 
 
 
