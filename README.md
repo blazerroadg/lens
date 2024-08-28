@@ -1,33 +1,26 @@
 ```
 
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Performance } from './performance.entity';
-
-@Injectable()
-export class PerformanceService {
-  constructor(
-    @InjectRepository(Performance)
-    private performanceRepository: Repository<Performance>,
-  ) {}
-
-  /**
-   * Inserts an array of performance records into the database.
-   * 
-   * @param items - Array of Performance entities to be inserted
-   */
-  async insertItems(items: Performance[]): Promise<void> {
-    try {
-      await this.performanceRepository.save(items);
-    } catch (error) {
-      // Handle errors as needed
-      throw new Error(`Failed to insert items: ${error.message}`);
-    }
+[
+  {
+    "username": "johndoe",
+    "company_type": "TypeA",
+    "DC": "DC1",
+    "team": "TeamA",
+    "date": "2024-08-28",
+    "exemption": "none",
+    "job": "Job1",
+    "volume": 10,
+    "hours": 8,
+    "overtime": 2,
+    "shift": "morning",
+    "schedule": "full-time",
+    "status": "active",
+    "updated_by": "admin",
+    "updated_on": "2024-08-28",
+    "created_by": "admin",
+    "created_on": "2024-08-28"
   }
-}
-
-
+]
 
 
 ```
