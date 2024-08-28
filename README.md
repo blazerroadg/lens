@@ -1,30 +1,100 @@
 ```
 
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { ApiProperty } from '@nestjs/swagger';
 
-<Field name="fruit">
-        {({ field }) => (
-          <Autocomplete
-            {...field}
-            value={values.fruit}
-            onChange={(event, newValue) => {
-              setFieldValue('fruit', newValue);
-            }}
-            onInputChange={(event, newInputValue) => {
-              fetchOptions(newInputValue);
-            }}
-            options={options}
-            getOptionLabel={(option) => option.label || ''}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Select a fruit"
-                error={touched.fruit && Boolean(errors.fruit)}
-                helperText={touched.fruit && errors.fruit}
-              />
-            )}
-          />
-        )}
-      </Field>
+@Entity('Performance')
+export class Performance {
+  @PrimaryGeneratedColumn()
+  @ApiProperty({ example: 1, description: 'The unique identifier of the performance record' })
+  id: number;
+
+  @Column()
+  @ApiProperty({ example: 'johndoe', description: 'The username of the employee' })
+  username: string;
+
+  @Column()
+  @ApiProperty({ example: 'TypeA', description: 'The type of the company' })
+  company_type: string;
+
+  @Column()
+  @ApiProperty({ example: 'DC1', description: 'Distribution Centre code' })
+  DC: string;
+
+  @Column()
+  @ApiProperty({ example: 'TeamA', description: 'The team to which the employee belongs' })
+  team: string;
+
+  @Column()
+  @ApiProperty({ example: '2024-08-28', description: 'The date of performance entry' })
+  date: Date;
+
+  @Column()
+  @ApiProperty({ example: 'none', description: 'Any exemptions applicable' })
+  exemption: string;
+
+  @Column()
+  @ApiProperty({ example: 'Job1', description: 'The job title' })
+  job: string;
+
+  @Column()
+  @ApiProperty({ example: 10, description: 'The volume of work' })
+  volume: number;
+
+  @Column()
+  @ApiProperty({ example: 8, description: 'Number of hours worked' })
+  hours: number;
+
+  @Column()
+  @ApiProperty({ example: 2, description: 'Number of overtime hours' })
+  overtime: number;
+
+  @Column()
+  @ApiProperty({ example: 'morning', description: 'Shift timing' })
+  shift: string;
+
+  @Column()
+  @ApiProperty({ example: 'full-time', description: 'The schedule type' })
+  schedule: string;
+
+  @Column()
+  @ApiProperty({ example: 'active', description: 'The status of the performance entry' })
+  status: string;
+
+  @Column()
+  @ApiProperty({ example: 'admin', description: 'The user who updated the entry' })
+  updated_by: string;
+
+  @Column()
+  @ApiProperty({ example: '2024-08-28', description: 'The date when the entry was updated' })
+  updated_on: Date;
+
+  @Column()
+  @ApiProperty({ example: 'admin', description: 'The user who created the entry' })
+  created_by: string;
+
+  @Column()
+  @ApiProperty({ example: '2024-08-28', description: 'The date when the entry was created' })
+  created_on: Date;
+}
+import { Controller, Post, Body } from '@nestjs/common';
+import { PerformanceService } from './performance.service';
+import { Performance } from './performance.entity';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+
+@ApiTags('performance')
+@Controller('performance')
+export class PerformanceController {
+  constructor(private readonly performanceService: PerformanceService) {}
+
+  @Post('insert')
+  @ApiOperation({ summary: 'Insert multiple performance records' })
+  @ApiResponse({ status: 201, description: 'The records have been successfully created.' })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  async insertItems(@Body() items: Performance[]): Promise<void> {
+    await this.performanceService.insertItems(items);
+  }
+}
 
 
 
