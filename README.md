@@ -1,19 +1,18 @@
 ```
 
-function generateUniqueInt(): number {
-  const timestamp = Math.floor(Date.now() / 1000); // Current timestamp in seconds
-  const randomNum = Math.floor(Math.random() * 1000); // Random number between 0 and 999
+async groupAndFilterByCreatedBy(createdBy: string): Promise<any[]> {
+    return this.yourRepository
+      .createQueryBuilder('entity')
+      .select(['entity.reqid', 'entity.status'])
+      .where('entity.created_by = :createdBy', { createdBy })
+      .groupBy('entity.reqid, entity.created_by')
+      .getRawMany();
+  }
 
-  // Combine timestamp and random number to ensure uniqueness
-  const uniqueInt = timestamp * 1000 + randomNum;
-
-  // Ensure the result is within the safe range for SQL Server INT type
-  return uniqueInt <= 2147483647 ? uniqueInt : uniqueInt % 2147483647;
-}
-
-const uniqueInt = generateUniqueInt();
-console.log(uniqueInt);
-
+@Get('filter')
+  async filterByCreatedBy(@Query('createdBy') createdBy: string) {
+    return this.yourService.groupAndFilterByCreatedBy(createdBy);
+  }
 
 
 
