@@ -1,50 +1,14 @@
 ```
 
-import axios from 'axios';
-
-async function insertPerformanceData() {
-  try {
-    const response = await axios.post(
-      'http://localhost:8080/performance/insert',
-      [
-        {
-          id: 3,
-          username: "10000",
-          company_type: "TypeA",
-          DC: 7088,
-          team: 1202,
-          date: "2024-08-28",
-          exemption: 1,
-          job: 1038,
-          volume: 10,
-          hours: 8,
-          overtime: 2,
-          shift: "shift1",
-          schedule: "full-time",
-          status: "active",
-          updated_by: "admin",
-          updated_on: "2024-08-28",
-          created_by: "admin",
-          created_on: "2024-08-28",
-          ReqNo: 2
-        }
-      ],
-      {
-        headers: {
-          Accept: "*/*",
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    console.log('Response:', response.data);
-  } catch (error) {
-    console.error('Error:', error);
-  }
+function generateUniqueInt(): number {
+  const timestamp = BigInt(Date.now()); // Get current timestamp in milliseconds
+  const randomNum = BigInt(Math.floor(Math.random() * 1000000)); // Random number between 0 and 999,999
+  return Number((timestamp * BigInt(1000000)) + randomNum); // Combine timestamp and random number
 }
 
-// Call the function
-insertPerformanceData();
+const uniqueInt = generateUniqueInt();
+console.log(uniqueInt);
+
 
 
 
