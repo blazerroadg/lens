@@ -1,18 +1,39 @@
 ```
 
-async groupAndFilterByCreatedBy(createdBy: string): Promise<any[]> {
-    return this.yourRepository
-      .createQueryBuilder('entity')
-      .select(['entity.reqid', 'entity.status'])
-      .where('entity.created_by = :createdBy', { createdBy })
-      .groupBy('entity.reqid, entity.created_by')
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Performance } from './entities/performance.entity'; // Assuming you have these entities
+import { Employee } from './entities/employee.entity';
+
+@Injectable()
+export class PerformanceService {
+  constructor(
+    @InjectRepository(Performance)
+    private readonly performanceRepository: Repository<Performance>,
+    @InjectRepository(Employee)
+    private readonly employeeRepository: Repository<Employee>,
+  ) {}
+
+  async getEmployeePerformance(reqNo: number) {
+    return this.performanceRepository
+      .createQueryBuilder('per')
+      .select([
+        'em.SEMI_Username',
+        'em.FirstName',
+        'em.LastName',
+        'per.created_on',
+        'per.updated_on',
+        'per.job',
+        'per.hours',
+        'per.overtime',
+        'per.shift',
+      ])
+      .innerJoin('per.employee', 'em')
+      .where('per.ReqNo = :reqNo', { reqNo })
       .getRawMany();
   }
-
-@Get('filter')
-  async filterByCreatedBy(@Query('createdBy') createdBy: string) {
-    return this.yourService.groupAndFilterByCreatedBy(createdBy);
-  }
+}
 
 
 
