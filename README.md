@@ -1,39 +1,72 @@
 ```
 
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Performance } from './entities/performance.entity'; // Assuming you have these entities
-import { Employee } from './entities/employee.entity';
+CREATE TABLE work_schedule (
+    wrks_work_date NVARCHAR(1000),
+    wrks_start_time NVARCHAR(1000),
+    wrks_end_time NVARCHAR(1000),
+    wrks_manual_calc NVARCHAR(1000),
+    emp_id NVARCHAR(1000),
+    shift_id NVARCHAR(1000),
+    calgrp_id NVARCHAR(1000),
+    wrks_authorized NVARCHAR(1000),
+    wrks_auth_by NVARCHAR(1000),
+    wrks_auth_date NVARCHAR(1000),
+    wrks_error_status NVARCHAR(1000),
+    wrks_flag_brk NVARCHAR(1000),
+    wrks_flag_recall NVARCHAR(1000),
+    wrks_flag1 NVARCHAR(1000),
+    wrks_flag2 NVARCHAR(1000),
+    wrks_flag3 NVARCHAR(1000),
+    wrks_flag4 NVARCHAR(1000),
+    wrks_flag5 NVARCHAR(1000),
+    wrks_udf1 NVARCHAR(1000),
+    wrks_udf2 NVARCHAR(1000),
+    wrks_udf3 NVARCHAR(1000),
+    wrks_udf4 NVARCHAR(1000),
+    wrks_udf5 NVARCHAR(1000),
+    wrks_udf6 NVARCHAR(1000),
+    wrks_udf7 NVARCHAR(1000),
+    wrks_udf8 NVARCHAR(1000),
+    wrks_udf9 NVARCHAR(1000),
+    wrks_udf10 NVARCHAR(1000),
+    wrks_desc NVARCHAR(1000),
+    wrks_comments NVARCHAR(1000),
+    wrks_clocks NVARCHAR(1000),
+    wrks_error NVARCHAR(1000),
+    wrks_rules_applied NVARCHAR(1000),
+    paygrp_id NVARCHAR(1000),
+    wrks_tcode_sum NVARCHAR(1000),
+    wrks_htype_sum NVARCHAR(1000),
+    wrks_orig_clocks NVARCHAR(1000),
+    wrks_messages NVARCHAR(1000),
+    wrks_in_code NVARCHAR(1000),
+    wrks_out_code NVARCHAR(1000),
+    wrks_full_day_codes NVARCHAR(1000),
+    wrks_full_day_minutes NVARCHAR(1000),
+    wrks_submitted NVARCHAR(1000),
+    wrks_use_def_settings NVARCHAR(1000),
+    wrks_wrkd_auth NVARCHAR(1000),
+    client_id NVARCHAR(1000),
+    petype_id NVARCHAR(1000),
+    stats_id NVARCHAR(1000),
+    wrks_clks_authorized NVARCHAR(1000),
+    data_date NVARCHAR(1000)
+);
+CREATE TABLE employee_data (
+    emp_id VARCHAR(1000),
+    emp_name VARCHAR(1000),
+    emp_lastname VARCHAR(1000),
+    emp_firstname VARCHAR(1000),
+    shftpat_id VARCHAR(1000),
+    emp_effective_date VARCHAR(1000),
+    emp_hire_date VARCHAR(1000),
+    emp_termination_date VARCHAR(1000),
+    emp_status VARCHAR(1000),
+    emp_def_minutes VARCHAR(1000),
+    emptyp_id VARCHAR(1000),
+    empwrktyp_id VARCHAR(1000)
+);
 
-@Injectable()
-export class PerformanceService {
-  constructor(
-    @InjectRepository(Performance)
-    private readonly performanceRepository: Repository<Performance>,
-    @InjectRepository(Employee)
-    private readonly employeeRepository: Repository<Employee>,
-  ) {}
-
-  async getEmployeePerformance(reqNo: number) {
-    return this.performanceRepository
-      .createQueryBuilder('per')
-      .select([
-        'em.SEMI_Username',
-        'em.FirstName',
-        'em.LastName',
-        'per.created_on',
-        'per.updated_on',
-        'per.job',
-        'per.hours',
-        'per.overtime',
-        'per.shift',
-      ])
-      .innerJoin('per.employee', 'em')
-      .where('per.ReqNo = :reqNo', { reqNo })
-      .getRawMany();
-  }
-}
 
 
 
