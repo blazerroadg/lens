@@ -1,74 +1,29 @@
 ```
 
-CREATE TABLE work_schedule (
-    wrks_work_date NVARCHAR(1000),
-    wrks_start_time NVARCHAR(1000),
-    wrks_end_time NVARCHAR(1000),
-    wrks_manual_calc NVARCHAR(1000),
-    emp_id NVARCHAR(1000),
-    shift_id NVARCHAR(1000),
-    calgrp_id NVARCHAR(1000),
-    wrks_authorized NVARCHAR(1000),
-    wrks_auth_by NVARCHAR(1000),
-    wrks_auth_date NVARCHAR(1000),
-    wrks_error_status NVARCHAR(1000),
-    wrks_flag_brk NVARCHAR(1000),
-    wrks_flag_recall NVARCHAR(1000),
-    wrks_flag1 NVARCHAR(1000),
-    wrks_flag2 NVARCHAR(1000),
-    wrks_flag3 NVARCHAR(1000),
-    wrks_flag4 NVARCHAR(1000),
-    wrks_flag5 NVARCHAR(1000),
-    wrks_udf1 NVARCHAR(1000),
-    wrks_udf2 NVARCHAR(1000),
-    wrks_udf3 NVARCHAR(1000),
-    wrks_udf4 NVARCHAR(1000),
-    wrks_udf5 NVARCHAR(1000),
-    wrks_udf6 NVARCHAR(1000),
-    wrks_udf7 NVARCHAR(1000),
-    wrks_udf8 NVARCHAR(1000),
-    wrks_udf9 NVARCHAR(1000),
-    wrks_udf10 NVARCHAR(1000),
-    wrks_desc NVARCHAR(1000),
-    wrks_comments NVARCHAR(1000),
-    wrks_clocks NVARCHAR(1000),
-    wrks_error NVARCHAR(1000),
-    wrks_rules_applied NVARCHAR(1000),
-    paygrp_id NVARCHAR(1000),
-    wrks_tcode_sum NVARCHAR(1000),
-    wrks_htype_sum NVARCHAR(1000),
-    wrks_orig_clocks NVARCHAR(1000),
-    wrks_messages NVARCHAR(1000),
-    wrks_in_code NVARCHAR(1000),
-    wrks_out_code NVARCHAR(1000),
-    wrks_full_day_codes NVARCHAR(1000),
-    wrks_full_day_minutes NVARCHAR(1000),
-    wrks_submitted NVARCHAR(1000),
-    wrks_use_def_settings NVARCHAR(1000),
-    wrks_wrkd_auth NVARCHAR(1000),
-    client_id NVARCHAR(1000),
-    petype_id NVARCHAR(1000),
-    stats_id NVARCHAR(1000),
-    wrks_clks_authorized NVARCHAR(1000),
-    data_date NVARCHAR(1000)
-);
-CREATE TABLE employee_data (
-    emp_id VARCHAR(1000),
-    emp_name VARCHAR(1000),
-    emp_lastname VARCHAR(1000),
-    emp_firstname VARCHAR(1000),
-    shftpat_id VARCHAR(1000),
-    emp_effective_date VARCHAR(1000),
-    emp_hire_date VARCHAR(1000),
-    emp_termination_date VARCHAR(1000),
-    emp_status VARCHAR(1000),
-    emp_def_minutes VARCHAR(1000),
-    emptyp_id VARCHAR(1000),
-    empwrktyp_id VARCHAR(1000)
-);
+# Dependencies
+FROM base as dependencies
 
+# Copy the npmrc file if it exists, otherwise set registry settings
+COPY package.json .npmrc* ./
 
+# Create .npmrc if not present and add the default registry
+RUN [ -f .npmrc ] || echo 'registry=https://registry.npmjs.org/' >> ./.npmrc
 
+# Add configuration for  scoped packages
+RUN echo '@****:registry=https://npme.***.com/' >> ./.npmrc
+
+COPY package-lock.json ./
+
+# Download production dependencies and cache them
+RUN npm set progress false \
+    && npm config set depth 0 \
+    && npm config set strict-ssl false \
+    && npm ci
+
+# Build stage
+FROM dependencies as build
+ARG API_URL
+COPY . .
 
 
 ```
