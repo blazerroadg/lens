@@ -1,58 +1,38 @@
 ```
-CREATE TABLE YourTableName (
-    wrks_id INT NULL,
-    wrks_work_date DATETIME NULL,   -- Assuming this is a full date and time value
-    wrks_start_time DATETIME NULL,
-    wrks_end_time DATETIME NULL,
-    wrks_manual_calc VARCHAR(255) NULL,   -- Assuming 255 max length for strings
-    emp_id INT NULL,
-    shft_id INT NULL,
-    calcgrp_id INT NULL,
-    wrks_authorized VARCHAR(255) NULL,
-    wrks_auth_by VARCHAR(255) NULL,
-    wrks_auth_date DATETIME NULL,
-    wrks_error_status VARCHAR(255) NULL,
-    wrks_flag_brk VARCHAR(255) NULL,
-    wrks_flag_recall VARCHAR(255) NULL,
-    wrks_flag1 VARCHAR(255) NULL,
-    wrks_flag2 VARCHAR(255) NULL,
-    wrks_flag3 VARCHAR(255) NULL,
-    wrks_flag4 VARCHAR(255) NULL,
-    wrks_flag5 VARCHAR(255) NULL,
-    wrks_udf1 VARCHAR(255) NULL,
-    wrks_udf2 VARCHAR(255) NULL,
-    wrks_udf3 VARCHAR(255) NULL,
-    wrks_udf4 VARCHAR(255) NULL,
-    wrks_udf5 VARCHAR(255) NULL,
-    wrks_udf6 VARCHAR(255) NULL,
-    wrks_udf7 VARCHAR(255) NULL,
-    wrks_udf8 VARCHAR(255) NULL,
-    wrks_udf9 VARCHAR(255) NULL,
-    wrks_udf10 VARCHAR(255) NULL,
-    wrks_desc VARCHAR(255) NULL,
-    wrks_comments VARCHAR(255) NULL,
-    wrks_clocks VARCHAR(255) NULL,
-    wrks_error VARCHAR(255) NULL,
-    wrks_rules_applied VARCHAR(255) NULL,
-    paygrp_id INT NULL,
-    wrks_tcode_sum VARCHAR(255) NULL,
-    wrks_htype_sum VARCHAR(255) NULL,
-    wrks_orig_clocks VARCHAR(255) NULL,
-    wrks_messages VARCHAR(255) NULL,
-    wrks_in_code VARCHAR(255) NULL,
-    wrks_out_code VARCHAR(255) NULL,
-    wrks_full_day_code VARCHAR(255) NULL,
-    wrks_full_day_minutes INT NULL,
-    wrks_submitted VARCHAR(255) NULL,
-    wrks_use_def_settings VARCHAR(255) NULL,
-    wrks_wrkd_auth VARCHAR(255) NULL,
-    client_id INT NULL,
-    petyp_id INT NULL,
-    eaststs_id INT NULL,
-    wrks_clks_authorized VARCHAR(255) NULL,
-    data_date DATE NULL  -- Assuming this is just a date without time
-);
+export default function KipAdmin() {
+  useEffect(() => {
+    console.log(userName, usersList, usersList?.tprUserGroup);
 
+    // Check if the user has access to 'QA National Manager'
+    const manager = usersList?.tprUserGroup?.find(
+      (item: any) => item.name === "QA National Manager"
+    );
+    if (manager?.userAccess?.hasAccess) {
+      setUser("admin");
+      return;
+    }
+
+    // Check if the user has access to 'KPI Approvals' and the DC matches
+    const approver = usersList?.tprUserGroup?.find(
+      (item: any) => item.name === "KPI Approvals"
+    );
+    if (approver?.userAccess?.hasAccess) {
+      const dcMatch = approver?.userAccess?.datafilter?.includes(
+        loadedData[0].per_DC
+      );
+      if (dcMatch) {
+        setUser("admin");
+        return;
+      }
+    }
+
+    // Check if createdBy and userName match
+    if (reqData?.createdBy === userName) {
+      setUser("user");
+      return;
+    }
+  }, [userName, usersList, loadedData, reqData]);
+}
 
 
 ```
