@@ -1,16 +1,16 @@
 ```
 CREATE TABLE YourTableName (
-    wrks_id INTEGER NULL,
-    wrks_work_date TIMESTAMP NULL,
+    wrks_id INT NULL,
+    wrks_work_date DATETIME NULL,   -- Assuming this is a full date and time value
     wrks_start_time DATETIME NULL,
     wrks_end_time DATETIME NULL,
-    wrks_manual_calc VARCHAR(255) NULL,
-    emp_id INTEGER NULL,
-    shft_id INTEGER NULL,
-    calcgrp_id INTEGER NULL,
+    wrks_manual_calc VARCHAR(255) NULL,   -- Assuming 255 max length for strings
+    emp_id INT NULL,
+    shft_id INT NULL,
+    calcgrp_id INT NULL,
     wrks_authorized VARCHAR(255) NULL,
     wrks_auth_by VARCHAR(255) NULL,
-    wrks_auth_date TIMESTAMP NULL,
+    wrks_auth_date DATETIME NULL,
     wrks_error_status VARCHAR(255) NULL,
     wrks_flag_brk VARCHAR(255) NULL,
     wrks_flag_recall VARCHAR(255) NULL,
@@ -34,7 +34,7 @@ CREATE TABLE YourTableName (
     wrks_clocks VARCHAR(255) NULL,
     wrks_error VARCHAR(255) NULL,
     wrks_rules_applied VARCHAR(255) NULL,
-    paygrp_id INTEGER NULL,
+    paygrp_id INT NULL,
     wrks_tcode_sum VARCHAR(255) NULL,
     wrks_htype_sum VARCHAR(255) NULL,
     wrks_orig_clocks VARCHAR(255) NULL,
@@ -42,16 +42,17 @@ CREATE TABLE YourTableName (
     wrks_in_code VARCHAR(255) NULL,
     wrks_out_code VARCHAR(255) NULL,
     wrks_full_day_code VARCHAR(255) NULL,
-    wrks_full_day_minutes INTEGER NULL,
+    wrks_full_day_minutes INT NULL,
     wrks_submitted VARCHAR(255) NULL,
     wrks_use_def_settings VARCHAR(255) NULL,
     wrks_wrkd_auth VARCHAR(255) NULL,
-    client_id INTEGER NULL,
-    petyp_id INTEGER NULL,
-    eaststs_id INTEGER NULL,
+    client_id INT NULL,
+    petyp_id INT NULL,
+    eaststs_id INT NULL,
     wrks_clks_authorized VARCHAR(255) NULL,
-    data_date DATE NULL
+    data_date DATE NULL  -- Assuming this is just a date without time
 );
+
 
 
 ```
