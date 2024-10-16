@@ -1,13 +1,18 @@
 ```
-const formatDate = () => {
-  const date = new Date();
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = String(date.getFullYear()).slice(-2); // Extract last 2 digits of the year
-  return `${day}${month}${year}`;
-};
+const formatDateToUniqueBigInt = (date) => {
+    const day = String(date.getDate()).padStart(2, '0'); // Get day and ensure 2 digits
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Get month and ensure 2 digits
+    const year = String(date.getFullYear()).slice(-2); // Get last 2 digits of the year
+    const formattedDate = `${day}${month}${year}`; // ddmmyy format
 
-const [reqNo, setReqNo] = useState(`${formatDate()}${new Date().getTime().toString().slice(-8)}`);
+    // Generate a unique timestamp or random number for uniqueness
+    const uniquePart = Date.now(); // Use timestamp for uniqueness
+
+    // Concatenate the formatted date with the unique part
+    const uniqueNumber = `${formattedDate}${uniquePart}`;
+
+    return BigInt(uniqueNumber); // Convert the combined string to BigInt
+  };
 
 ```
 
