@@ -1,40 +1,10 @@
 ```
-export default function KipAdmin() {
-  useEffect(() => {
-    console.log(userName, usersList, usersList?.tprUserGroup);
-
-    // Check if the user has access to 'QA National Manager'
-    const manager = usersList?.tprUserGroup?.find(
-      (item: any) => item.name === "QA National Manager"
-    );
-    if (manager?.userAccess?.hasAccess) {
-      setUser("admin");
-      return;
-    }
-
-    // Check if the user has access to 'KPI Approvals' and the DC matches
-    const approver = usersList?.tprUserGroup?.find(
-      (item: any) => item.name === "KPI Approvals"
-    );
-    if (approver?.userAccess?.hasAccess) {
-      const dcMatch = approver?.userAccess?.datafilter?.includes(
-        loadedData[0].per_DC
-      );
-      if (dcMatch) {
-        setUser("admin");
-        return;
-      }
-    }
-
-    // Check if createdBy and userName match
-    if (reqData?.createdBy === userName) {
-      setUser("user");
-      return;
-    }
-  }, [userName, usersList, loadedData, reqData]);
-}
-
-
+const formatDate = (date) => {
+    const day = String(date.getDate()).padStart(2, '0'); // Get day and ensure 2 digits
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Get month (0-indexed, so add 1) and ensure 2 digits
+    const year = date.getFullYear(); // Get full year
+    return `${day}/${month}/${year}`;
+  };
 ```
 
 
