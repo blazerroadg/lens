@@ -1,10 +1,14 @@
 ```
-const formatDate = (date) => {
-    const day = String(date.getDate()).padStart(2, '0'); // Get day and ensure 2 digits
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Get month (0-indexed, so add 1) and ensure 2 digits
-    const year = date.getFullYear(); // Get full year
-    return `${day}/${month}/${year}`;
-  };
+const formatDate = () => {
+  const date = new Date();
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2); // Extract last 2 digits of the year
+  return `${day}${month}${year}`;
+};
+
+const [reqNo, setReqNo] = useState(`${formatDate()}${new Date().getTime().toString().slice(-8)}`);
+
 ```
 
 
