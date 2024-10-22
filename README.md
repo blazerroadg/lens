@@ -1,18 +1,8 @@
 ```
-const formatDateToUniqueBigInt = (date) => {
-    const day = String(date.getDate()).padStart(2, '0'); // Get day and ensure 2 digits
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Get month and ensure 2 digits
-    const year = String(date.getFullYear()).slice(-2); // Get last 2 digits of the year
-    const formattedDate = `${day}${month}${year}`; // ddmmyy format
+RIGHT(wrks_clocks, 2) == "01" ? "Clock In" : (RIGHT(wrks_clocks, 2) == "02" ? "Clock Out" : (RIGHT(wrks_clocks, 2) == "06" ? "Going to Meal" : "Back From Meal"))
 
-    // Generate a unique timestamp or random number for uniqueness
-    const uniquePart = Date.now(); // Use timestamp for uniqueness
+LEFT(wrks_clocks, 2) == "__" ? "Raw Punch" : "Edited/Adjusted Punch"
 
-    // Concatenate the formatted date with the unique part
-    const uniqueNumber = `${formattedDate}${uniquePart}`;
-
-    return BigInt(uniqueNumber); // Convert the combined string to BigInt
-  };
 
 ```
 
