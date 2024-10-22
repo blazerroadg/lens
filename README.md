@@ -1,4 +1,7 @@
 ```
+;
+
+
 WITH Punches AS (
     SELECT
         User_ID,
@@ -12,19 +15,25 @@ Breaks AS (
     SELECT
         User_ID,
         Date,
-        SUM(DATEDIFF(MINUTE, 
-            MIN(CASE WHEN Record_Type = 'Punch to Break' THEN Swipe_Time END),
-            MAX(CASE WHEN Record_Type = 'Return from Break' THEN Swipe_Time END)
-        )) AS Break_Duration
-    FROM your_table
-    WHERE Record_Type IN ('Punch to Break', 'Return from Break')
+        SUM(DATEDIFF(MINUTE, Punch_To_Break, Return_From_Break)) AS Break_Duration
+    FROM (
+        SELECT
+            User_ID,
+            Date,
+            MIN(CASE WHEN Record_Type = 'Punch to Break' THEN Swipe_Time END) AS Punch_To_Break,
+            MAX(CASE WHEN Record_Type = 'Return from Break' THEN Swipe_Time END) AS Return_From_Break
+        FROM your_table
+        WHERE Record_Type IN ('Punch to Break', 'Return from Break')
+        GROUP BY User_ID, Date, Record_Type
+    ) AS BreakPairs
+    WHERE Punch_To_Break IS NOT NULL AND Return_From_Break IS NOT NULL
     GROUP BY User_ID, Date
 )
 SELECT
     p.User_ID,
     p.Date,
     DATEDIFF(MINUTE, p.In_Punch, p.Out_Punch) - COALESCE(b.Break_Duration, 0) AS Total_Working_Minutes,
-    (DATEDIFF(MINUTE, p.In_Punch, p.Out_Punch) - COALESCE(b.Break_Duration, 0)) / 60 AS Total_Working_Hours
+    (DATEDIFF(MINUTE, p.In_Punch, p.Out_Punch) - COALESCE(b.Break_Duration, 0)) / 60.0 AS Total_Working_Hours
 FROM Punches p
 LEFT JOIN Breaks b ON p.User_ID = b.User_ID AND p.Date = b.Date;
 
