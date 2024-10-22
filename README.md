@@ -1,7 +1,33 @@
 ```
-RIGHT(wrks_clocks, 2) == "01" ? "Clock In" : (RIGHT(wrks_clocks, 2) == "02" ? "Clock Out" : (RIGHT(wrks_clocks, 2) == "06" ? "Going to Meal" : "Back From Meal"))
+WITH Punches AS (
+    SELECT
+        User_ID,
+        Date,
+        MIN(CASE WHEN Record_Type = 'In Punch' THEN Swipe_Time END) AS In_Punch,
+        MAX(CASE WHEN Record_Type = 'Out Punch' THEN Swipe_Time END) AS Out_Punch
+    FROM your_table
+    GROUP BY User_ID, Date
+),
+Breaks AS (
+    SELECT
+        User_ID,
+        Date,
+        SUM(DATEDIFF(MINUTE, 
+            MIN(CASE WHEN Record_Type = 'Punch to Break' THEN Swipe_Time END),
+            MAX(CASE WHEN Record_Type = 'Return from Break' THEN Swipe_Time END)
+        )) AS Break_Duration
+    FROM your_table
+    WHERE Record_Type IN ('Punch to Break', 'Return from Break')
+    GROUP BY User_ID, Date
+)
+SELECT
+    p.User_ID,
+    p.Date,
+    DATEDIFF(MINUTE, p.In_Punch, p.Out_Punch) - COALESCE(b.Break_Duration, 0) AS Total_Working_Minutes,
+    (DATEDIFF(MINUTE, p.In_Punch, p.Out_Punch) - COALESCE(b.Break_Duration, 0)) / 60 AS Total_Working_Hours
+FROM Punches p
+LEFT JOIN Breaks b ON p.User_ID = b.User_ID AND p.Date = b.Date;
 
-LEFT(wrks_clocks, 2) == "__" ? "Raw Punch" : "Edited/Adjusted Punch"
 
 
 ```
