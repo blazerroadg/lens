@@ -1,41 +1,47 @@
 ```
-;
+public override void Input0_ProcessInputRow(Input0Buffer Row)
+{
+    // Sample input format:
+    // XX2022041503000001~XX2022041507000002~XX2022041512000006 (Clock In, Clock Out, Meal/Break)
+    
+    string[] records = Row.wrks_clocks.Split('~');
+    DateTime clockIn = DateTime.MinValue;
+    DateTime clockOut = DateTime.MinValue;
+    TimeSpan mealDuration = TimeSpan.Zero;
 
+    foreach (string record in records)
+    {
+        // Extract type and time from the record
+        string type = record.Substring(record.Length - 2, 2); // Last 2 chars
+        string timeString = record.Substring(2, 14); // YYYYMMDDHHMMSS format
+        
+        // Convert to DateTime
+        DateTime time = DateTime.ParseExact(timeString, "yyyyMMddHHmmss", null);
 
-WITH Punches AS (
-    SELECT
-        User_ID,
-        Date,
-        MIN(CASE WHEN Record_Type = 'In Punch' THEN Swipe_Time END) AS In_Punch,
-        MAX(CASE WHEN Record_Type = 'Out Punch' THEN Swipe_Time END) AS Out_Punch
-    FROM your_table
-    GROUP BY User_ID, Date
-),
-Breaks AS (
-    SELECT
-        User_ID,
-        Date,
-        SUM(DATEDIFF(MINUTE, Punch_To_Break, Return_From_Break)) AS Break_Duration
-    FROM (
-        SELECT
-            User_ID,
-            Date,
-            MIN(CASE WHEN Record_Type = 'Punch to Break' THEN Swipe_Time END) AS Punch_To_Break,
-            MAX(CASE WHEN Record_Type = 'Return from Break' THEN Swipe_Time END) AS Return_From_Break
-        FROM your_table
-        WHERE Record_Type IN ('Punch to Break', 'Return from Break')
-        GROUP BY User_ID, Date, Record_Type
-    ) AS BreakPairs
-    WHERE Punch_To_Break IS NOT NULL AND Return_From_Break IS NOT NULL
-    GROUP BY User_ID, Date
-)
-SELECT
-    p.User_ID,
-    p.Date,
-    DATEDIFF(MINUTE, p.In_Punch, p.Out_Punch) - COALESCE(b.Break_Duration, 0) AS Total_Working_Minutes,
-    (DATEDIFF(MINUTE, p.In_Punch, p.Out_Punch) - COALESCE(b.Break_Duration, 0)) / 60.0 AS Total_Working_Hours
-FROM Punches p
-LEFT JOIN Breaks b ON p.User_ID = b.User_ID AND p.Date = b.Date;
+        if (type == "01") // Clock In
+        {
+            clockIn = time;
+        }
+        else if (type == "02") // Clock Out
+        {
+            clockOut = time;
+        }
+        else if (type == "06") // Meal/Break
+        {
+            // Assuming each meal/break entry indicates a span from start to end.
+            DateTime mealStart = time;
+            DateTime mealEnd = clockOut; // Replace with actual end time from record parsing
+            mealDuration += (mealEnd - mealStart);
+        }
+    }
+
+    if (clockIn != DateTime.MinValue && clockOut != DateTime.MinValue)
+    {
+        TimeSpan totalWorkTime = clockOut - clockIn - mealDuration;
+        Row.TotalHours = (decimal)totalWorkTime.TotalHours;
+    }
+}
+
 
 
 
