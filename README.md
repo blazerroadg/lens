@@ -1,45 +1,105 @@
 ```
-public override void Input0_ProcessInputRow(Input0Buffer Row)
 {
-    // Sample input format:
-    // XX2022041503000001~XX2022041507000002~XX2022041512000006 (Clock In, Clock Out, Meal/Break)
-    
-    string[] records = Row.wrks_clocks.Split('~');
-    DateTime clockIn = DateTime.MinValue;
-    DateTime clockOut = DateTime.MinValue;
-    TimeSpan mealDuration = TimeSpan.Zero;
-
-    foreach (string record in records)
+  "data": [
     {
-        // Extract type and time from the record
-        string type = record.Substring(record.Length - 2, 2); // Last 2 chars
-        string timeString = record.Substring(2, 14); // YYYYMMDDHHMMSS format
-        
-        // Convert to DateTime
-        DateTime time = DateTime.ParseExact(timeString, "yyyyMMddHHmmss", null);
-
-        if (type == "01") // Clock In
-        {
-            clockIn = time;
-        }
-        else if (type == "02") // Clock Out
-        {
-            clockOut = time;
-        }
-        else if (type == "06") // Meal/Break
-        {
-            // Assuming each meal/break entry indicates a span from start to end.
-            DateTime mealStart = time;
-            DateTime mealEnd = clockOut; // Replace with actual end time from record parsing
-            mealDuration += (mealEnd - mealStart);
-        }
-    }
-
-    if (clockIn != DateTime.MinValue && clockOut != DateTime.MinValue)
+      "DC": 7102,
+      "Date": "9/23/2024",
+      "Department": "Administration",
+      "ADP Number": 625161,
+      "TPR Username": "sdhaw",
+      "TM Name": "Saroj Dhaw",
+      "eTime Hrs": "N/A",
+      "GTA Hrs": 4,
+      "TPR Hrs": 4,
+      "Hrs Diff": 0,
+      "Issue": "Okay"
+    },
     {
-        TimeSpan totalWorkTime = clockOut - clockIn - mealDuration;
-        Row.TotalHours = (decimal)totalWorkTime.TotalHours;
+      "DC": 7102,
+      "Date": "9/23/2024",
+      "Department": "Administration",
+      "ADP Number": "20415",
+      "TPR Username": "jjass",
+      "TM Name": "Judy Jass",
+      "eTime Hrs": 5,
+      "GTA Hrs": 5,
+      "TPR Hrs": 5,
+      "Hrs Diff": 0,
+      "Issue": "Okay"
+    },
+    {
+      "DC": 7102,
+      "Date": "9/24/2024",
+      "Department": "Administration",
+      "ADP Number": "20415",
+      "TPR Username": "jkabe",
+      "TM Name": "Jerome Kabe",
+      "eTime Hrs": 6,
+      "GTA Hrs": 7,
+      "TPR Hrs": 6,
+      "Hrs Diff": 1,
+      "Issue": "Missing eTime"
+    },
+    {
+      "DC": 7102,
+      "Date": "9/24/2024",
+      "Department": "Administration",
+      "ADP Number": "40222",
+      "TPR Username": "vkamb",
+      "TM Name": "Vivek Kamb",
+      "eTime Hrs": 7,
+      "GTA Hrs": 6,
+      "TPR Hrs": 6,
+      "Hrs Diff": -1,
+      "Issue": "Missing TPR"
+    },
+    {
+      "DC": 7102,
+      "Date": "9/24/2024",
+      "Department": "Administration",
+      "ADP Number": "40222",
+      "TPR Username": "rkhos",
+      "TM Name": "Rajdeep Khos",
+      "eTime Hrs": 8,
+      "GTA Hrs": 8,
+      "TPR Hrs": 8,
+      "Hrs Diff": 0,
+      "Issue": "Missing TPR"
+    },
+    {
+      "DC": 7102,
+      "Date": "9/24/2024",
+      "Department": "Administration",
+      "ADP Number": "ssekh",
+      "TPR Username": "Sandeep Sekh",
+      "TM Name": "Sandeep Sekh",
+      "eTime Hrs": 9,
+      "GTA Hrs": 10,
+      "TPR Hrs": 9,
+      "Hrs Diff": -1,
+      "Issue": "Missing GTA"
+    },
+    {
+      "DC": 7102,
+      "Date": "9/24/2024",
+      "Department": "Administration",
+      "ADP Number": "rvija",
+      "TPR Username": "Rohini Vija",
+      "TM Name": "Rohini Vija",
+      "eTime Hrs": 10,
+      "GTA Hrs": 10,
+      "TPR Hrs": 10,
+      "Hrs Diff": -10,
+      "Issue": "Missing GTA"
     }
+  ],
+  "totals": {
+    "DC": 7102,
+    "eTime Hrs": 276,
+    "GTA Hrs": 4.75,
+    "TPR Hrs": 0,
+    "Hrs Diff": -11
+  }
 }
 
 
