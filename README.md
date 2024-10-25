@@ -1,106 +1,19 @@
 ```
-{
-  "data": [
-    {
-      "DC": 7102,
-      "Date": "9/23/2024",
-      "Department": "Administration",
-      "ADP Number": 625161,
-      "TPR Username": "sdhaw",
-      "TM Name": "Saroj Dhaw",
-      "eTime Hrs": "N/A",
-      "GTA Hrs": 4,
-      "TPR Hrs": 4,
-      "Hrs Diff": 0,
-      "Issue": "Okay"
-    },
-    {
-      "DC": 7102,
-      "Date": "9/23/2024",
-      "Department": "Administration",
-      "ADP Number": "20415",
-      "TPR Username": "jjass",
-      "TM Name": "Judy Jass",
-      "eTime Hrs": 5,
-      "GTA Hrs": 5,
-      "TPR Hrs": 5,
-      "Hrs Diff": 0,
-      "Issue": "Okay"
-    },
-    {
-      "DC": 7102,
-      "Date": "9/24/2024",
-      "Department": "Administration",
-      "ADP Number": "20415",
-      "TPR Username": "jkabe",
-      "TM Name": "Jerome Kabe",
-      "eTime Hrs": 6,
-      "GTA Hrs": 7,
-      "TPR Hrs": 6,
-      "Hrs Diff": 1,
-      "Issue": "Missing eTime"
-    },
-    {
-      "DC": 7102,
-      "Date": "9/24/2024",
-      "Department": "Administration",
-      "ADP Number": "40222",
-      "TPR Username": "vkamb",
-      "TM Name": "Vivek Kamb",
-      "eTime Hrs": 7,
-      "GTA Hrs": 6,
-      "TPR Hrs": 6,
-      "Hrs Diff": -1,
-      "Issue": "Missing TPR"
-    },
-    {
-      "DC": 7102,
-      "Date": "9/24/2024",
-      "Department": "Administration",
-      "ADP Number": "40222",
-      "TPR Username": "rkhos",
-      "TM Name": "Rajdeep Khos",
-      "eTime Hrs": 8,
-      "GTA Hrs": 8,
-      "TPR Hrs": 8,
-      "Hrs Diff": 0,
-      "Issue": "Missing TPR"
-    },
-    {
-      "DC": 7102,
-      "Date": "9/24/2024",
-      "Department": "Administration",
-      "ADP Number": "ssekh",
-      "TPR Username": "Sandeep Sekh",
-      "TM Name": "Sandeep Sekh",
-      "eTime Hrs": 9,
-      "GTA Hrs": 10,
-      "TPR Hrs": 9,
-      "Hrs Diff": -1,
-      "Issue": "Missing GTA"
-    },
-    {
-      "DC": 7102,
-      "Date": "9/24/2024",
-      "Department": "Administration",
-      "ADP Number": "rvija",
-      "TPR Username": "Rohini Vija",
-      "TM Name": "Rohini Vija",
-      "eTime Hrs": 10,
-      "GTA Hrs": 10,
-      "TPR Hrs": 10,
-      "Hrs Diff": -10,
-      "Issue": "Missing GTA"
+ const gridRef = useRef<AgGridReact>(null);
+
+  const handlePrint = () => {
+    if (gridRef.current) {
+      const api = gridRef.current.api;
+      api.setPrinterFriendly(true);
+      api.setDomLayout('print');
+      
+      setTimeout(() => {
+        window.print();
+        api.setPrinterFriendly(false);
+        api.setDomLayout(null);
+      }, 2000);
     }
-  ],
-  "totals": {
-    "DC": 7102,
-    "eTime Hrs": 276,
-    "GTA Hrs": 4.75,
-    "TPR Hrs": 0,
-    "Hrs Diff": -11
-  }
-}
+  };
 
 
 
