@@ -1,19 +1,30 @@
 ```
 
-import { Entity, PrimaryGeneratedColumn, Column, Unique } from 'typeorm';
+async generateRequestNumber(dcCode: string): Promise<string> {
+        return await this.dataSource.transaction(async (manager) => {
+            // Fetch the highest sequence number for the given `dcCode`
+            const lastRequest = await manager
+                .createQueryBuilder(Request, 'request')
+                .where("request.dcCode = :dcCode", { dcCode })
+                .orderBy("request.sequence", "DESC")
+                .getOne();
 
-@Entity()
-@Unique(['requestNumber'])
-export class Request {
-    @PrimaryGeneratedColumn()
-    id: number;
+            // Determine the next sequence number
+            let nextSequence: number;
+            if (lastRequest) {
+                nextSequence = lastRequest.sequence + 1;
+            } else {
+                nextSequence = 100; // Start with 100 if no previous request exists for the given dcCode
+            }
 
-    @Column({ length: 4 })
-    dcCode: string;
+            // Save the new request with separate dcCode and sequence
+            const newRequest = manager.create(Request, { dcCode, sequence: nextSequence });
+            await manager.save(newRequest);
 
-    @Column({ length: 6 })
-    requestNumber: string;
-}
+            // Return formatted request number: DC<dcCode><sequence>
+            return `DC${dcCode}${String(nextSequence)}`;
+        });
+    }
 
 @Get('generate')
     async generateRequestNumber(@Query('dcCode') dcCode: string): Promise<string> {
