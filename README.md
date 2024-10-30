@@ -1,33 +1,24 @@
 ```
 
-async generateRequestNumber(dcCode: string): Promise<string> {
-        // Fetch the highest sequence number for the given `dcCode`
-        const lastRequest = await this.requestRepository
-            .createQueryBuilder("request")
-            .where("request.dcCode = :dcCode", { dcCode })
-            .orderBy("request.sequence", "DESC")
-            .getOne();
+const handleChange = async (event: any) => {
+    const selectedValue = event.target.value;
+    setFieldValue(rest.name, selectedValue);
 
-        // Determine the next sequence number
-        let nextSequence: number;
-        if (lastRequest) {
-            nextSequence = lastRequest.sequence + 1;
-        } else {
-            nextSequence = 100; // Start with 100 if no previous request exists for the given dcCode
-        }
-
-        // Create a new request instance with separate dcCode and sequence
-        const newRequest = this.requestRepository.create({
-            dcCode,
-            sequence: nextSequence,
-        });
-        
-        // Save the new request to the database
-        await this.requestRepository.save(newRequest);
-
-        // Return formatted request number: DC<dcCode><sequence>
-        return `DC${dcCode}${String(nextSequence)}`;
+    // Call your API endpoint here
+    try {
+      const response = await fetch(`your-api-endpoint/${selectedValue}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const result = await response.json();
+      console.log(result);
+    } catch (error) {
+      console.error("Error fetching data:", error);
     }
+  };
+
 
 ```
 
