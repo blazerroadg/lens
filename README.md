@@ -28,6 +28,23 @@ END
 
 
 
+async generateRequestNumber(dcCode: string): Promise<string> {
+        try {
+            const pool = await sql.connect(this.sqlConfig);
+            const result = await pool.request()
+                .input('dc_code', sql.VarChar, dcCode)
+                .output('request_number', sql.VarChar)
+                .execute('GenerateRequestNumber');
+
+            return result.output.request_number;
+        } catch (err) {
+            console.error('Error generating request number:', err);
+            throw err;
+        }
+    }
+
+
+
 
 
 ```
