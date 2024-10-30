@@ -1,19 +1,31 @@
 ```
- const gridRef = useRef<AgGridReact>(null);
+CREATE TABLE Requests (
+    id INT PRIMARY KEY IDENTITY(1,1),
+    dc_code VARCHAR(4) NOT NULL,
+    request_number VARCHAR(6) NOT NULL UNIQUE
+);
+CREATE PROCEDURE GenerateRequestNumber
+    @dc_code VARCHAR(4),
+    @request_number VARCHAR(6) OUTPUT
+AS
+BEGIN
+    DECLARE @lastTwoDigits VARCHAR(2)
+    DECLARE @nextSequence INT
+    SET @lastTwoDigits = RIGHT(@dc_code, 2)
+    
+    -- Find the max sequence number for the given DC
+    SELECT @nextSequence = COALESCE(MAX(CAST(SUBSTRING(request_number, 3, 4) AS INT)), 0) + 1
+    FROM Requests
+    WHERE RIGHT(dc_code, 2) = @lastTwoDigits
 
-  const handlePrint = () => {
-    if (gridRef.current) {
-      const api = gridRef.current.api;
-      api.setPrinterFriendly(true);
-      api.setDomLayout('print');
-      
-      setTimeout(() => {
-        window.print();
-        api.setPrinterFriendly(false);
-        api.setDomLayout(null);
-      }, 2000);
-    }
-  };
+    -- Format the request number as per the example
+    SET @request_number = @lastTwoDigits + FORMAT(@nextSequence, 'D4')
+    
+    -- Insert the new request into the Requests table
+    INSERT INTO Requests (dc_code, request_number)
+    VALUES (@dc_code, @request_number)
+END
+
 
 
 
