@@ -1,40 +1,19 @@
 ```
 
-async generateRequestNumber(dcCode: string): Promise<string> {
-        return await this.dataSource.transaction(async (manager) => {
-            const lastTwoDigits = dcCode.slice(-2);
+import { Entity, PrimaryGeneratedColumn, Column, Unique } from 'typeorm';
 
-            // Fetch the latest sequence number for the given `dcCode`
-            const lastRequest = await manager
-                .createQueryBuilder(Request, 'request')
-                .where("RIGHT(request.dcCode, 2) = :lastTwoDigits", { lastTwoDigits })
-                .orderBy("request.requestNumber", "DESC")
-                .getOne();
+@Entity()
+@Unique(['requestNumber'])
+export class Request {
+    @PrimaryGeneratedColumn()
+    id: number;
 
-            // Determine the next sequence number
-            let nextSequence: number;
-            if (lastRequest) {
-                // Extract the numeric part of the last request number and increment it
-                const lastSequence = parseInt(lastRequest.requestNumber.slice(2));
-                nextSequence = lastSequence + 1;
-            } else {
-                // Start with 1 if no previous request exists for the given dcCode
-                nextSequence = 1;
-            }
+    @Column({ length: 4 })
+    dcCode: string;
 
-            // Determine the minimum digit length (starts with 3 digits)
-            const sequenceLength = Math.max(3, String(nextSequence).length);
-
-            // Format the request number as per the requirement, adjusting digits dynamically
-            const requestNumber = `${lastTwoDigits}${String(nextSequence).padStart(sequenceLength, '0')}`;
-
-            // Save the new request
-            const newRequest = manager.create(Request, { dcCode, requestNumber });
-            await manager.save(newRequest);
-
-            return requestNumber;
-        });
-    }
+    @Column({ length: 6 })
+    requestNumber: string;
+}
 
 @Get('generate')
     async generateRequestNumber(@Query('dcCode') dcCode: string): Promise<string> {
