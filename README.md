@@ -1,36 +1,33 @@
 ```
 
 async generateRequestNumber(dcCode: string): Promise<string> {
-        return await this.dataSource.transaction(async (manager) => {
-            // Fetch the highest sequence number for the given `dcCode`
-            const lastRequest = await manager
-                .createQueryBuilder(Request, 'request')
-                .where("request.dcCode = :dcCode", { dcCode })
-                .orderBy("request.sequence", "DESC")
-                .getOne();
+        // Fetch the highest sequence number for the given `dcCode`
+        const lastRequest = await this.requestRepository
+            .createQueryBuilder("request")
+            .where("request.dcCode = :dcCode", { dcCode })
+            .orderBy("request.sequence", "DESC")
+            .getOne();
 
-            // Determine the next sequence number
-            let nextSequence: number;
-            if (lastRequest) {
-                nextSequence = lastRequest.sequence + 1;
-            } else {
-                nextSequence = 100; // Start with 100 if no previous request exists for the given dcCode
-            }
+        // Determine the next sequence number
+        let nextSequence: number;
+        if (lastRequest) {
+            nextSequence = lastRequest.sequence + 1;
+        } else {
+            nextSequence = 100; // Start with 100 if no previous request exists for the given dcCode
+        }
 
-            // Save the new request with separate dcCode and sequence
-            const newRequest = manager.create(Request, { dcCode, sequence: nextSequence });
-            await manager.save(newRequest);
-
-            // Return formatted request number: DC<dcCode><sequence>
-            return `DC${dcCode}${String(nextSequence)}`;
+        // Create a new request instance with separate dcCode and sequence
+        const newRequest = this.requestRepository.create({
+            dcCode,
+            sequence: nextSequence,
         });
-    }
+        
+        // Save the new request to the database
+        await this.requestRepository.save(newRequest);
 
-@Get('generate')
-    async generateRequestNumber(@Query('dcCode') dcCode: string): Promise<string> {
-        return await this.requestService.generateRequestNumber(dcCode);
+        // Return formatted request number: DC<dcCode><sequence>
+        return `DC${dcCode}${String(nextSequence)}`;
     }
-
 
 ```
 
