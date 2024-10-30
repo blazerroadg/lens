@@ -1,50 +1,45 @@
 ```
-CREATE TABLE Requests (
-    id INT PRIMARY KEY IDENTITY(1,1),
-    dc_code VARCHAR(4) NOT NULL,
-    request_number VARCHAR(6) NOT NULL UNIQUE
-);
-CREATE PROCEDURE GenerateRequestNumber
-    @dc_code VARCHAR(4),
-    @request_number VARCHAR(6) OUTPUT
-AS
-BEGIN
-    DECLARE @lastTwoDigits VARCHAR(2)
-    DECLARE @nextSequence INT
-    SET @lastTwoDigits = RIGHT(@dc_code, 2)
-    
-    -- Find the max sequence number for the given DC
-    SELECT @nextSequence = COALESCE(MAX(CAST(SUBSTRING(request_number, 3, 4) AS INT)), 0) + 1
-    FROM Requests
-    WHERE RIGHT(dc_code, 2) = @lastTwoDigits
-
-    -- Format the request number as per the example
-    SET @request_number = @lastTwoDigits + FORMAT(@nextSequence, 'D4')
-    
-    -- Insert the new request into the Requests table
-    INSERT INTO Requests (dc_code, request_number)
-    VALUES (@dc_code, @request_number)
-END
-
-
 
 async generateRequestNumber(dcCode: string): Promise<string> {
-        try {
-            const pool = await sql.connect(this.sqlConfig);
-            const result = await pool.request()
-                .input('dc_code', sql.VarChar, dcCode)
-                .output('request_number', sql.VarChar)
-                .execute('GenerateRequestNumber');
+        return await this.dataSource.transaction(async (manager) => {
+            const lastTwoDigits = dcCode.slice(-2);
 
-            return result.output.request_number;
-        } catch (err) {
-            console.error('Error generating request number:', err);
-            throw err;
-        }
+            // Fetch the latest sequence number for the given `dcCode`
+            const lastRequest = await manager
+                .createQueryBuilder(Request, 'request')
+                .where("RIGHT(request.dcCode, 2) = :lastTwoDigits", { lastTwoDigits })
+                .orderBy("request.requestNumber", "DESC")
+                .getOne();
+
+            // Determine the next sequence number
+            let nextSequence: number;
+            if (lastRequest) {
+                // Extract the numeric part of the last request number and increment it
+                const lastSequence = parseInt(lastRequest.requestNumber.slice(2));
+                nextSequence = lastSequence + 1;
+            } else {
+                // Start with 1 if no previous request exists for the given dcCode
+                nextSequence = 1;
+            }
+
+            // Determine the minimum digit length (starts with 3 digits)
+            const sequenceLength = Math.max(3, String(nextSequence).length);
+
+            // Format the request number as per the requirement, adjusting digits dynamically
+            const requestNumber = `${lastTwoDigits}${String(nextSequence).padStart(sequenceLength, '0')}`;
+
+            // Save the new request
+            const newRequest = manager.create(Request, { dcCode, requestNumber });
+            await manager.save(newRequest);
+
+            return requestNumber;
+        });
     }
 
-
-
+@Get('generate')
+    async generateRequestNumber(@Query('dcCode') dcCode: string): Promise<string> {
+        return await this.requestService.generateRequestNumber(dcCode);
+    }
 
 
 ```
