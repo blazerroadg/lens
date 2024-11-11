@@ -1,5 +1,66 @@
 ```
 
+using System;
+using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
+
+public class SignatureGenerator
+{
+    public static void Main(string[] args)
+    {
+        string consumerId = "<<Your Consumer ID>>";
+        string privateKeyVersion = "<<Your Key Version>>";
+        string privateKey = "<<Your Private Key>>";
+        long inTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        var map = new Dictionary<string, string>
+        {
+            { "WM_CONSUMER.ID", consumerId },
+            { "WM_CONSUMER.INTIMESTAMP", inTimestamp.ToString() },
+            { "WM_SEC.KEY_VERSION", privateKeyVersion }
+        };
+
+        string[] array = Canonicalize(map);
+
+        try
+        {
+            string data = GenerateSignature(privateKey, array[1]);
+            Console.WriteLine("inTimestamp: " + inTimestamp);
+            Console.WriteLine("Signature: " + data);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error generating signature: " + e.Message);
+        }
+    }
+
+    private static string GenerateSignature(string privateKey, string stringToSign)
+    {
+        using (var rsa = new RSACryptoServiceProvider())
+        {
+            rsa.FromXmlString(privateKey); // Make sure your privateKey is in XML format for C#
+            byte[] dataToSign = Encoding.UTF8.GetBytes(stringToSign);
+            var signatureBytes = rsa.SignData(dataToSign, CryptoConfig.MapNameToOID("SHA256"));
+            return Convert.ToBase64String(signatureBytes);
+        }
+    }
+
+    private static string[] Canonicalize(Dictionary<string, string> headersToSign)
+    {
+        var sortedKeys = new SortedDictionary<string, string>(headersToSign);
+        StringBuilder canonicalizedStrBuffer = new StringBuilder();
+        StringBuilder parameterNamesBuffer = new StringBuilder();
+
+        foreach (var entry in sortedKeys)
+        {
+            parameterNamesBuffer.Append(entry.Key.Trim()).Append(";");
+            canonicalizedStrBuffer.Append(entry.Value.Trim()).Append("\n");
+        }
+
+        return new[] { parameterNamesBuffer.ToString(), canonicalizedStrBuffer.ToString() };
+    }
+}
 
 ```
 
