@@ -1,39 +1,66 @@
 ```
 
-import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { Module } from '@nestjs/common';
+import { ReportsController } from './reports.controller';
+import { ReportsService } from './reports.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserReportDto } from './user-report.dto';
 
-@Injectable()
-export class UserService {
-  constructor(private readonly dataSource: DataSource) {}
-
-  async callStoredProcedure(userId: number): Promise<any> {
-    try {
-      const result = await this.dataSource.query(
-        `EXEC spGetUsers @userId = @0`,
-        [userId],
-      );
-      return result;
-    } catch (error) {
-      console.error('Error executing stored procedure', error);
-      throw error;
-    }
-  }
-}
+@Module({
+    imports: [
+        // Import TypeOrmModule if you need repository access
+        TypeOrmModule.forFeature([]), // Add relevant entities if needed, or leave empty
+    ],
+    controllers: [ReportsController],
+    providers: [ReportsService],
+    exports: [ReportsService], // Export the service if used in other modules
+})
+export class ReportsModule {}
 
 import { Controller, Get, Param } from '@nestjs/common';
-import { UserService } from './user.service';
+import { ReportsService } from './reports.service';
+import { UserReportDto } from './user-report.dto';
 
-@Controller('users')
-export class UserController {
-  constructor(private readonly userService: UserService) {}
+@Controller('reports')
+export class ReportsController {
+    constructor(private readonly reportsService: ReportsService) {}
 
-  @Get(':userId')
-  async getUser(@Param('userId') userId: number) {
-    const result = await this.userService.callStoredProcedure(+userId);
-    return result;
-  }
+    @Get('user/:userId')
+    async getUserReport(@Param('userId') userId: number): Promise<UserReportDto[]> {
+        return await this.reportsService.getUserReport(+userId);
+    }
 }
+import { Injectable } from '@nestjs/common';
+import { DataSource } from 'typeorm';
+import { UserReportDto } from './user-report.dto';
+import { plainToInstance } from 'class-transformer';
+
+@Injectable()
+export class ReportsService {
+    constructor(private readonly dataSource: DataSource) {}
+
+    async getUserReport(userId: number): Promise<UserReportDto[]> {
+        try {
+            const result = await this.dataSource.query(
+                `EXEC spGetUserReport @userId = @0`,
+                [userId],
+            );
+            return plainToInstance(UserReportDto, result);
+        } catch (error) {
+            console.error('Error executing stored procedure', error);
+            throw error;
+        }
+    }
+}
+export class UserReportDto {
+    userId: number;
+    userName: string;
+    totalOrders: number;
+    totalSpent: number;
+    lastLogin: Date;
+    // Add more fields if needed
+}
+
 
 ```
 
