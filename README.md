@@ -1,65 +1,38 @@
 ```
 
-using System;
-using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Text;
+import { Injectable } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 
-public class SignatureGenerator
-{
-    public static void Main(string[] args)
-    {
-        string consumerId = "<<Your Consumer ID>>";
-        string privateKeyVersion = "<<Your Key Version>>";
-        string privateKey = "<<Your Private Key>>";
-        long inTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+@Injectable()
+export class UserService {
+  constructor(private readonly dataSource: DataSource) {}
 
-        var map = new Dictionary<string, string>
-        {
-            { "WM_CONSUMER.ID", consumerId },
-            { "WM_CONSUMER.INTIMESTAMP", inTimestamp.ToString() },
-            { "WM_SEC.KEY_VERSION", privateKeyVersion }
-        };
-
-        string[] array = Canonicalize(map);
-
-        try
-        {
-            string data = GenerateSignature(privateKey, array[1]);
-            Console.WriteLine("inTimestamp: " + inTimestamp);
-            Console.WriteLine("Signature: " + data);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("Error generating signature: " + e.Message);
-        }
+  async callStoredProcedure(userId: number): Promise<any> {
+    try {
+      const result = await this.dataSource.query(
+        `EXEC spGetUsers @userId = @0`,
+        [userId],
+      );
+      return result;
+    } catch (error) {
+      console.error('Error executing stored procedure', error);
+      throw error;
     }
+  }
+}
 
-    private static string GenerateSignature(string privateKey, string stringToSign)
-    {
-        using (var rsa = new RSACryptoServiceProvider())
-        {
-            rsa.FromXmlString(privateKey); // Make sure your privateKey is in XML format for C#
-            byte[] dataToSign = Encoding.UTF8.GetBytes(stringToSign);
-            var signatureBytes = rsa.SignData(dataToSign, CryptoConfig.MapNameToOID("SHA256"));
-            return Convert.ToBase64String(signatureBytes);
-        }
-    }
+import { Controller, Get, Param } from '@nestjs/common';
+import { UserService } from './user.service';
 
-    private static string[] Canonicalize(Dictionary<string, string> headersToSign)
-    {
-        var sortedKeys = new SortedDictionary<string, string>(headersToSign);
-        StringBuilder canonicalizedStrBuffer = new StringBuilder();
-        StringBuilder parameterNamesBuffer = new StringBuilder();
+@Controller('users')
+export class UserController {
+  constructor(private readonly userService: UserService) {}
 
-        foreach (var entry in sortedKeys)
-        {
-            parameterNamesBuffer.Append(entry.Key.Trim()).Append(";");
-            canonicalizedStrBuffer.Append(entry.Value.Trim()).Append("\n");
-        }
-
-        return new[] { parameterNamesBuffer.ToString(), canonicalizedStrBuffer.ToString() };
-    }
+  @Get(':userId')
+  async getUser(@Param('userId') userId: number) {
+    const result = await this.userService.callStoredProcedure(+userId);
+    return result;
+  }
 }
 
 ```
