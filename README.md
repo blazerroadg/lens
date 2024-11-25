@@ -1,65 +1,84 @@
 ```
 
-import { Module } from '@nestjs/common';
-import { ReportsController } from './reports.controller';
-import { ReportsService } from './reports.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserReportDto } from './user-report.dto';
-
-@Module({
-    imports: [
-        // Import TypeOrmModule if you need repository access
-        TypeOrmModule.forFeature([]), // Add relevant entities if needed, or leave empty
-    ],
-    controllers: [ReportsController],
-    providers: [ReportsService],
-    exports: [ReportsService], // Export the service if used in other modules
-})
-export class ReportsModule {}
-
-import { Controller, Get, Param } from '@nestjs/common';
-import { ReportsService } from './reports.service';
-import { UserReportDto } from './user-report.dto';
-
 @Controller('reports')
 export class ReportsController {
     constructor(private readonly reportsService: ReportsService) {}
 
-    @Get('user/:userId')
-    async getUserReport(@Param('userId') userId: number): Promise<UserReportDto[]> {
-        return await this.reportsService.getUserReport(+userId);
+    @Get('inhouse')
+    async getInhouseReport(
+        @Query('startDate') startDate?: string,
+        @Query('endDate') endDate?: string,
+        @Query('dc') dc?: number,
+        @Query('department') department?: number,
+        @Query('jobcode') jobcode?: number,
+        @Query('jobcodeType') jobcodeType?: string,
+        @Query('dcType') dcType?: string,
+        @Query('region') region?: string,
+        @Query('shift') shift?: number,
+        @Query('schedule') schedule?: number,
+        @Query('throughputCode') throughputCode?: number
+    ): Promise<any> {
+        const params = {
+            startDate,
+            endDate,
+            dc,
+            department,
+            jobcode,
+            jobcodeType,
+            dcType,
+            region,
+            shift,
+            schedule,
+            throughputCode,
+        };
+        return await this.reportsService.getInhouseReport(params);
     }
 }
-import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
-import { UserReportDto } from './user-report.dto';
-import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class ReportsService {
     constructor(private readonly dataSource: DataSource) {}
 
-    async getUserReport(userId: number): Promise<UserReportDto[]> {
+    async getInhouseReport(params: any): Promise<any[]> {
         try {
+            const queryParams = [
+                params.startDate || null,
+                params.endDate || null,
+                params.dc || null,
+                params.department || null,
+                params.jobcode || null,
+                params.jobcodeType || null,
+                params.dcType || null,
+                params.region || null,
+                params.shift || null,
+                params.schedule || null,
+                params.throughputCode || null,
+            ];
+
             const result = await this.dataSource.query(
-                `EXEC spGetUserReport @userId = @0`,
-                [userId],
+                `EXEC spGetInhouseReport 
+                @startDate = @0, 
+                @endDate = @1, 
+                @dc = @2, 
+                @department = @3, 
+                @jobcode = @4, 
+                @jobcodeType = @5, 
+                @dcType = @6, 
+                @region = @7, 
+                @shift = @8, 
+                @schedule = @9, 
+                @throughputCode = @10`,
+                queryParams
             );
-            return plainToInstance(UserReportDto, result);
+
+            return result;
         } catch (error) {
             console.error('Error executing stored procedure', error);
             throw error;
         }
     }
 }
-export class UserReportDto {
-    userId: number;
-    userName: string;
-    totalOrders: number;
-    totalSpent: number;
-    lastLogin: Date;
-    // Add more fields if needed
-}
+
 
 
 ```
