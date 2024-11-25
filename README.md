@@ -1,83 +1,17 @@
 ```
 
-@Controller('reports')
-export class ReportsController {
-    constructor(private readonly reportsService: ReportsService) {}
+ @ApiQuery({ name: 'startDate', required: false, type: String, description: 'Start date of the report' })
+    @ApiQuery({ name: 'endDate', required: false, type: String, description: 'End date of the report' })
+    @ApiQuery({ name: 'dc', required: false, type: Number, description: 'Distribution center ID' })
+    @ApiQuery({ name: 'department', required: false, type: Number, description: 'Department ID' })
+    @ApiQuery({ name: 'jobcode', required: false, type: Number, description: 'Job code' })
+    @ApiQuery({ name: 'jobcodeType', required: false, type: String, description: 'Job code type' })
+    @ApiQuery({ name: 'dcType', required: false, type: String, description: 'DC type' })
+    @ApiQuery({ name: 'region', required: false, type: String, description: 'Region' })
+    @ApiQuery({ name: 'shift', required: false, type: Number, description: 'Shift ID' })
+    @ApiQuery({ name: 'schedule', required: false, type: Number, description: 'Schedule ID' })
+    @ApiQuery({ name: 'throughputCode', required: false, type: Number, description: 'Throughput code' })
 
-    @Get('inhouse')
-    async getInhouseReport(
-        @Query('startDate') startDate?: string,
-        @Query('endDate') endDate?: string,
-        @Query('dc') dc?: number,
-        @Query('department') department?: number,
-        @Query('jobcode') jobcode?: number,
-        @Query('jobcodeType') jobcodeType?: string,
-        @Query('dcType') dcType?: string,
-        @Query('region') region?: string,
-        @Query('shift') shift?: number,
-        @Query('schedule') schedule?: number,
-        @Query('throughputCode') throughputCode?: number
-    ): Promise<any> {
-        const params = {
-            startDate,
-            endDate,
-            dc,
-            department,
-            jobcode,
-            jobcodeType,
-            dcType,
-            region,
-            shift,
-            schedule,
-            throughputCode,
-        };
-        return await this.reportsService.getInhouseReport(params);
-    }
-}
-
-@Injectable()
-export class ReportsService {
-    constructor(private readonly dataSource: DataSource) {}
-
-    async getInhouseReport(params: any): Promise<any[]> {
-        try {
-            const queryParams = [
-                params.startDate || null,
-                params.endDate || null,
-                params.dc || null,
-                params.department || null,
-                params.jobcode || null,
-                params.jobcodeType || null,
-                params.dcType || null,
-                params.region || null,
-                params.shift || null,
-                params.schedule || null,
-                params.throughputCode || null,
-            ];
-
-            const result = await this.dataSource.query(
-                `EXEC spGetInhouseReport 
-                @startDate = @0, 
-                @endDate = @1, 
-                @dc = @2, 
-                @department = @3, 
-                @jobcode = @4, 
-                @jobcodeType = @5, 
-                @dcType = @6, 
-                @region = @7, 
-                @shift = @8, 
-                @schedule = @9, 
-                @throughputCode = @10`,
-                queryParams
-            );
-
-            return result;
-        } catch (error) {
-            console.error('Error executing stored procedure', error);
-            throw error;
-        }
-    }
-}
 
 
 
