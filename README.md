@@ -1,47 +1,90 @@
 ```
 
-const gridOptions = {
-  getRowStyle: params => {
-    if (params.node.group) {
-      return { background: '#f0f0f0', fontWeight: 'bold', color: '#000' };
-    } else if (params.data && params.data.summary) {
-      return { background: '#f7df8f', fontWeight: 'bold', borderTop: '1px solid #ccc' };
-    }
-    return null;
-  },
-};
+import React from 'react';
+import { AgGridReact } from 'ag-grid-react';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
 
-
-const groupColumn = {
-  headerName: 'Group',
-  field: 'group',
-  cellRenderer: 'agGroupCellRenderer',
-  cellRendererParams: {
-    innerRenderer: params => {
-      return `<span style="color: #000; font-weight: bold;">${params.value}</span>`;
+const ReportTable = () => {
+  const columnDefs = [
+    {
+      headerName: 'Group',
+      field: 'group',
+      rowGroup: true,
+      hide: true,
+      cellRenderer: 'agGroupCellRenderer',
+      cellRendererParams: {
+        innerRenderer: params => {
+          return `<span style="font-weight: bold; color: #000;">${params.value}</span>`;
+        },
+      },
     },
-  },
+    { headerName: 'Job Code', field: 'jobCode', width: 200 },
+    { headerName: 'Volume', field: 'volume', valueFormatter: params => params.value.toLocaleString(), width: 120 },
+    { headerName: 'Hours', field: 'hours', width: 100 },
+    { headerName: 'Plan', field: 'plan', width: 100 },
+    { headerName: 'CPH', field: 'cph', width: 100 },
+  ];
+
+  const rowData = [
+    { group: 'SSTK Receiving Area', jobCode: '2030 1002', volume: 26523, hours: 108, plan: 33, cph: 265.23 },
+    { group: 'SSTK Receiving Area', jobCode: '2030 1030', volume: 1924, hours: 50, plan: 12, cph: 56.58 },
+    { group: 'SSTK Receiving Area', jobCode: 'TOTAL', volume: 28447, hours: 158, plan: 45, cph: 321.81, isSummary: true },
+    { group: 'DA Receiving Area', jobCode: '2030 1040', volume: 8841, hours: 36, plan: 11, cph: 88.41 },
+    { group: 'DA Receiving Area', jobCode: 'TOTAL', volume: 8841, hours: 36, plan: 11, cph: 88.41, isSummary: true },
+  ];
+
+  const gridOptions = {
+    groupIncludeFooter: true,
+    groupIncludeTotalFooter: true,
+    autoGroupColumnDef: {
+      headerName: 'Group',
+      cellRendererParams: {
+        suppressCount: false, // Show count beside group name
+      },
+    },
+    getRowStyle: params => {
+      if (params.node.group) {
+        return { background: '#f0f0f0', fontWeight: 'bold', borderBottom: '2px solid #ddd' };
+      } else if (params.data && params.data.isSummary) {
+        return { background: '#f7df8f', fontWeight: 'bold', borderTop: '1px solid #000' };
+      }
+      return null;
+    },
+    pinnedBottomRowData: [
+      {
+        jobCode: 'TOTAL',
+        volume: 37288,
+        hours: 194,
+        plan: 56,
+        cph: 410.22,
+        isSummary: true,
+      },
+    ],
+  };
+
+  return (
+    <div
+      className="ag-theme-alpine"
+      style={{
+        height: '600px',
+        width: '100%',
+      }}
+    >
+      <AgGridReact
+        columnDefs={columnDefs}
+        rowData={rowData}
+        groupUseEntireRow
+        gridOptions={gridOptions}
+        groupDefaultExpanded={-1} // Expand all groups by default
+        animateRows={true}
+        suppressAggFuncInHeader={true} // Cleaner headers
+      />
+    </div>
+  );
 };
 
-const rowData = [
-  { group: 'SSTK Receiving Area', jobCode: '2030', volume: 26523, hours: 108, isSummary: false },
-  { group: 'SSTK Receiving Area', jobCode: 'TOTAL', volume: 26523, hours: 108, isSummary: true },
-];
-const columnDefs = [
-  { headerName: 'Job Code', field: 'jobCode', cellStyle: { textAlign: 'left' } },
-  { headerName: 'Volume', field: 'volume', cellStyle: { fontWeight: 'bold', textAlign: 'right' } },
-];
-const gridOptions = {
-  pinnedBottomRowData: [{ jobCode: 'TOTAL', volume: 26523, hours: 108 }],
-};
-.ag-theme-custom .ag-header-cell {
-  background-color: #f7df8f;
-  font-weight: bold;
-}
-.ag-theme-custom .ag-row {
-  border-bottom: 1px solid #ccc;
-}
-
+export default ReportTable;
 
 
 
