@@ -1,16 +1,47 @@
 ```
 
- @ApiQuery({ name: 'startDate', required: false, type: String, description: 'Start date of the report' })
-    @ApiQuery({ name: 'endDate', required: false, type: String, description: 'End date of the report' })
-    @ApiQuery({ name: 'dc', required: false, type: Number, description: 'Distribution center ID' })
-    @ApiQuery({ name: 'department', required: false, type: Number, description: 'Department ID' })
-    @ApiQuery({ name: 'jobcode', required: false, type: Number, description: 'Job code' })
-    @ApiQuery({ name: 'jobcodeType', required: false, type: String, description: 'Job code type' })
-    @ApiQuery({ name: 'dcType', required: false, type: String, description: 'DC type' })
-    @ApiQuery({ name: 'region', required: false, type: String, description: 'Region' })
-    @ApiQuery({ name: 'shift', required: false, type: Number, description: 'Shift ID' })
-    @ApiQuery({ name: 'schedule', required: false, type: Number, description: 'Schedule ID' })
-    @ApiQuery({ name: 'throughputCode', required: false, type: Number, description: 'Throughput code' })
+const gridOptions = {
+  getRowStyle: params => {
+    if (params.node.group) {
+      return { background: '#f0f0f0', fontWeight: 'bold', color: '#000' };
+    } else if (params.data && params.data.summary) {
+      return { background: '#f7df8f', fontWeight: 'bold', borderTop: '1px solid #ccc' };
+    }
+    return null;
+  },
+};
+
+
+const groupColumn = {
+  headerName: 'Group',
+  field: 'group',
+  cellRenderer: 'agGroupCellRenderer',
+  cellRendererParams: {
+    innerRenderer: params => {
+      return `<span style="color: #000; font-weight: bold;">${params.value}</span>`;
+    },
+  },
+};
+
+const rowData = [
+  { group: 'SSTK Receiving Area', jobCode: '2030', volume: 26523, hours: 108, isSummary: false },
+  { group: 'SSTK Receiving Area', jobCode: 'TOTAL', volume: 26523, hours: 108, isSummary: true },
+];
+const columnDefs = [
+  { headerName: 'Job Code', field: 'jobCode', cellStyle: { textAlign: 'left' } },
+  { headerName: 'Volume', field: 'volume', cellStyle: { fontWeight: 'bold', textAlign: 'right' } },
+];
+const gridOptions = {
+  pinnedBottomRowData: [{ jobCode: 'TOTAL', volume: 26523, hours: 108 }],
+};
+.ag-theme-custom .ag-header-cell {
+  background-color: #f7df8f;
+  font-weight: bold;
+}
+.ag-theme-custom .ag-row {
+  border-bottom: 1px solid #ccc;
+}
+
 
 
 
