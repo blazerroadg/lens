@@ -1,10 +1,18 @@
-As you can see, most of the libraries and solutions are similar to AG Grid. Since we already have a license for it, our first approach should be to try customizing the AG Grid styling to closely match the report’s design. However, there are limitations, and it’s unlikely that we’ll achieve an exact match.
-
-If that doesn’t work, the second option would be to combine the MUI Table, which is already integrated into our code, with custom coding to achieve the exact styling and look we need. Keep in mind that this second approach will be more time-consuming.
 
 
 
+```
+import React from 'react';
+import { Navigate } from 'react-router-dom';
 
+const ProtectedRoute = ({ isAuthenticated, children }) => {
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
+export default ProtectedRoute;
 
 ```
 
