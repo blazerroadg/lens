@@ -2,102 +2,23 @@
 
 
 ```
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { JobShiftHours } from './job-shift-hours.entity';
+const shiftsData = Object.entries(rest).reduce((acc, [key, value]) => {
+  // Split the key into "shift" and "day" parts
+  const [shift, day] = key.split('-');
 
-@Injectable()
-export class JobShiftHoursService {
-  constructor(
-    @InjectRepository(JobShiftHours)
-    private readonly jobShiftHoursRepository: Repository<JobShiftHours>,
-  ) {}
-
-  // Save multiple records
-  async save(jobShiftHoursList: Partial<JobShiftHours[]>): Promise<JobShiftHours[]> {
-    // Create the records
-    const records = this.jobShiftHoursRepository.create(jobShiftHoursList);
-
-    // Save all records in bulk
-    return await this.jobShiftHoursRepository.save(records);
+  // Check if the shift already exists in the accumulator
+  if (!acc[shift]) {
+    acc[shift] = { shift }; // Initialize with the shift name
   }
-}
 
+  // Add the day and its value to the shift
+  acc[shift][day] = value;
 
-import { Controller, Post, Body } from '@nestjs/common';
-import { JobShiftHoursService } from './job-shift-hours.service';
-import { JobShiftHours } from './job-shift-hours.entity';
+  return acc;
+}, []);
 
-@Controller('job-shift-hours')
-export class JobShiftHoursController {
-  constructor(private readonly service: JobShiftHoursService) {}
-
-  @Post('/bulk-save')
-  async save(
-    @Body() jobShiftHoursList: Partial<JobShiftHours[]>,
-  ): Promise<JobShiftHours[]> {
-    return this.service.save(jobShiftHoursList);
-  }
-}
-
-
-
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { JobShiftHours } from './job-shift-hours.entity';
-
-@Injectable()
-export class JobShiftHoursService {
-  constructor(
-    @InjectRepository(JobShiftHours)
-    private readonly jobShiftHoursRepository: Repository<JobShiftHours>,
-  ) {}
-
-  // Bulk update for a list of JobShiftHours
-  async bulkUpdate(jobShiftHoursList: Partial<JobShiftHours[]>): Promise<JobShiftHours[]> {
-    const updatedRecords: JobShiftHours[] = [];
-
-    for (const jobShiftHours of jobShiftHoursList) {
-      if (!jobShiftHours.id) {
-        throw new Error(`Missing id for one of the records`);
-      }
-
-      // Find the existing record
-      const existingRecord = await this.jobShiftHoursRepository.findOneBy({ id: jobShiftHours.id });
-      if (!existingRecord) {
-        throw new Error(`Record with id ${jobShiftHours.id} not found`);
-      }
-
-      // Merge new data into the existing record
-      const updatedRecord = this.jobShiftHoursRepository.merge(existingRecord, jobShiftHours);
-      // Save the updated record
-      updatedRecords.push(await this.jobShiftHoursRepository.save(updatedRecord));
-    }
-
-    return updatedRecords;
-  }
-}
-
-
-import { Controller, Put, Body } from '@nestjs/common';
-import { JobShiftHoursService } from './job-shift-hours.service';
-import { JobShiftHours } from './job-shift-hours.entity';
-
-@Controller('job-shift-hours')
-export class JobShiftHoursController {
-  constructor(private readonly service: JobShiftHoursService) {}
-
-  @Put('/bulk-update')
-  async bulkUpdate(
-    @Body() jobShiftHoursList: Partial<JobShiftHours[]>,
-  ): Promise<JobShiftHours[]> {
-    return this.service.bulkUpdate(jobShiftHoursList);
-  }
-}
-
-
+// Convert the accumulator (an object) to an array of shifts
+const shiftsArray = Object.values(shiftsData);
 
 
 ```
