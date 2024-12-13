@@ -2,37 +2,45 @@
 
 
 ```
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { JobShiftHours } from './job-shift-hours.entity';
 
-@Entity('Job_Shift_Hours')
-export class JobShiftHours {
-  @PrimaryGeneratedColumn()
-  id: number;
+@Injectable()
+export class JobShiftHoursService {
+  constructor(
+    @InjectRepository(JobShiftHours)
+    private readonly jobShiftHoursRepository: Repository<JobShiftHours>,
+  ) {}
 
-  @Column()
-  jobId: number;
+  // Save multiple records
+  async save(jobShiftHoursList: Partial<JobShiftHours[]>): Promise<JobShiftHours[]> {
+    // Create the records
+    const records = this.jobShiftHoursRepository.create(jobShiftHoursList);
 
-  @Column({ type: 'smallint' })
-  shift: number;
-
-  @Column({ type: 'smallint', nullable: true })
-  mondayPlan: number;
-
-  @Column({ type: 'smallint', nullable: true })
-  tuesdayPlan: number;
-
-  @Column({ type: 'smallint', nullable: true })
-  wednesdayPlan: number;
-
-  @Column({ type: 'smallint', nullable: true })
-  thursdayPlan: number;
-
-  @Column({ type: 'smallint', nullable: true })
-  fridayPlan: number;
-
-  @Column({ type: 'smallint', nullable: true })
-  saturdayPlan: number;
+    // Save all records in bulk
+    return await this.jobShiftHoursRepository.save(records);
+  }
 }
+
+
+import { Controller, Post, Body } from '@nestjs/common';
+import { JobShiftHoursService } from './job-shift-hours.service';
+import { JobShiftHours } from './job-shift-hours.entity';
+
+@Controller('job-shift-hours')
+export class JobShiftHoursController {
+  constructor(private readonly service: JobShiftHoursService) {}
+
+  @Post('/bulk-save')
+  async save(
+    @Body() jobShiftHoursList: Partial<JobShiftHours[]>,
+  ): Promise<JobShiftHours[]> {
+    return this.service.save(jobShiftHoursList);
+  }
+}
+
 
 
 import { Injectable } from '@nestjs/common';
@@ -47,30 +55,33 @@ export class JobShiftHoursService {
     private readonly jobShiftHoursRepository: Repository<JobShiftHours>,
   ) {}
 
-  // Get by jobId
-  async getByJobId(jobId: number): Promise<JobShiftHours[]> {
-    return await this.jobShiftHoursRepository.find({ where: { jobId } });
-  }
+  // Bulk update for a list of JobShiftHours
+  async bulkUpdate(jobShiftHoursList: Partial<JobShiftHours[]>): Promise<JobShiftHours[]> {
+    const updatedRecords: JobShiftHours[] = [];
 
-  // Insert a new record
-  async insert(data: Partial<JobShiftHours>): Promise<JobShiftHours> {
-    const newRecord = this.jobShiftHoursRepository.create(data);
-    return await this.jobShiftHoursRepository.save(newRecord);
-  }
+    for (const jobShiftHours of jobShiftHoursList) {
+      if (!jobShiftHours.id) {
+        throw new Error(`Missing id for one of the records`);
+      }
 
-  // Update an existing record
-  async update(id: number, data: Partial<JobShiftHours>): Promise<JobShiftHours> {
-    const existingRecord = await this.jobShiftHoursRepository.findOneBy({ id });
-    if (!existingRecord) {
-      throw new Error('Record not found');
+      // Find the existing record
+      const existingRecord = await this.jobShiftHoursRepository.findOneBy({ id: jobShiftHours.id });
+      if (!existingRecord) {
+        throw new Error(`Record with id ${jobShiftHours.id} not found`);
+      }
+
+      // Merge new data into the existing record
+      const updatedRecord = this.jobShiftHoursRepository.merge(existingRecord, jobShiftHours);
+      // Save the updated record
+      updatedRecords.push(await this.jobShiftHoursRepository.save(updatedRecord));
     }
-    const updatedRecord = this.jobShiftHoursRepository.merge(existingRecord, data);
-    return await this.jobShiftHoursRepository.save(updatedRecord);
+
+    return updatedRecords;
   }
 }
 
 
-import { Controller, Get, Post, Put, Param, Body } from '@nestjs/common';
+import { Controller, Put, Body } from '@nestjs/common';
 import { JobShiftHoursService } from './job-shift-hours.service';
 import { JobShiftHours } from './job-shift-hours.entity';
 
@@ -78,37 +89,13 @@ import { JobShiftHours } from './job-shift-hours.entity';
 export class JobShiftHoursController {
   constructor(private readonly service: JobShiftHoursService) {}
 
-  @Get(':jobId')
-  async getByJobId(@Param('jobId') jobId: number): Promise<JobShiftHours[]> {
-    return this.service.getByJobId(jobId);
-  }
-
-  @Post()
-  async insert(@Body() data: Partial<JobShiftHours>): Promise<JobShiftHours> {
-    return this.service.insert(data);
-  }
-
-  @Put(':id')
-  async update(
-    @Param('id') id: number,
-    @Body() data: Partial<JobShiftHours>,
-  ): Promise<JobShiftHours> {
-    return this.service.update(id, data);
+  @Put('/bulk-update')
+  async bulkUpdate(
+    @Body() jobShiftHoursList: Partial<JobShiftHours[]>,
+  ): Promise<JobShiftHours[]> {
+    return this.service.bulkUpdate(jobShiftHoursList);
   }
 }
-
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { JobShiftHours } from './job-shift-hours.entity';
-import { JobShiftHoursService } from './job-shift-hours.service';
-import { JobShiftHoursController } from './job-shift-hours.controller';
-
-@Module({
-  imports: [TypeOrmModule.forFeature([JobShiftHours])],
-  providers: [JobShiftHoursService],
-  controllers: [JobShiftHoursController],
-})
-export class JobShiftHoursModule {}
 
 
 
