@@ -2,41 +2,83 @@
 
 
 ```
+import { Injectable, NestMiddleware } from '@nestjs/common';
+import { Request, Response, NextFunction } from 'express';
+
+@Injectable()
+export class ExtractCookieMiddleware implements NestMiddleware {
+  use(req: Request, res: Response, next: NextFunction) {
+    const token = req.cookies?.['your-cookie-name'];
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized: Token missing' });
+    }
+    req['token'] = token; // Attach token to the request object
+    next();
+  }
+}
+
+import { Module, MiddlewareConsumer } from '@nestjs/common';
+
+@Module({
+  // other imports
+})
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(ExtractCookieMiddleware).forRoutes('*'); // Apply to all routes or specific routes
+  }
+}
+
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import axios from 'axios';
 
-// Create an Axios instance
-const axiosInstance = axios.create({
-  baseURL: 'https://api.example.com', // Replace with your API base URL
-});
-
-// Add a request interceptor to include the auth token
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken'); // Or retrieve from context/storage
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+@Injectable()
+export class AuthService {
+  async validateToken(token: string): Promise<boolean> {
+    try {
+      const response = await axios.get('https://your-validation-service.com/validate', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      return response.status === 200; // or check response.data if needed
+    } catch (error) {
+      console.error('Token validation failed:', error);
+      return false;
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
   }
-);
+}
 
-// Optionally, add a response interceptor for error handling
-axiosInstance.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Handle specific errors (e.g., token expiry)
-    if (error.response && error.response.status === 401) {
-      console.error('Unauthorized! Redirecting to login...');
-      // Perform logout or redirect logic here
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
+import { AuthService } from './auth.service';
+
+@Injectable()
+export class AuthGuard implements CanActivate {
+  constructor(private readonly authService: AuthService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const token = request.cookies?.['your-cookie-name']; // Get the token from cookies
+
+    if (!token) {
+      throw new HttpException('Unauthorized: Token missing', HttpStatus.UNAUTHORIZED);
     }
-    return Promise.reject(error);
-  }
-);
 
-export default axiosInstance;
+    const isValid = await this.authService.validateToken(token);
+    if (!isValid) {
+      throw new HttpException('Unauthorized: Invalid token', HttpStatus.UNAUTHORIZED);
+    }
+
+    return true; // Proceed if the token is valid
+  }
+}
+
 
 
 ```
