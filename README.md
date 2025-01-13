@@ -2,6 +2,41 @@
 
 
 ```
+import axios from 'axios';
+
+// Create an Axios instance
+const axiosInstance = axios.create({
+  baseURL: 'https://api.example.com', // Replace with your API base URL
+});
+
+// Add a request interceptor to include the auth token
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken'); // Or retrieve from context/storage
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Optionally, add a response interceptor for error handling
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle specific errors (e.g., token expiry)
+    if (error.response && error.response.status === 401) {
+      console.error('Unauthorized! Redirecting to login...');
+      // Perform logout or redirect logic here
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default axiosInstance;
 
 
 ```
