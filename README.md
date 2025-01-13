@@ -3,59 +3,15 @@
 
 ```
 import { Injectable, NestMiddleware } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import * as cookieParser from 'cookie-parser';
 
 @Injectable()
-export class ExtractCookieMiddleware implements NestMiddleware {
-  use(req: Request, res: Response, next: NextFunction) {
-    const token = req.cookies?.['your-cookie-name'];
-    if (!token) {
-      return res.status(401).json({ message: 'Unauthorized: Token missing' });
-    }
-    req['token'] = token; // Attach token to the request object
-    next();
+export class CookieParserMiddleware implements NestMiddleware {
+  use(req: any, res: any, next: () => void) {
+    cookieParser()(req, res, next); // Parse cookies
   }
 }
-
-import { Module, MiddlewareConsumer } from '@nestjs/common';
-
-@Module({
-  // other imports
-})
-export class AppModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(ExtractCookieMiddleware).forRoutes('*'); // Apply to all routes or specific routes
-  }
-}
-
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import axios from 'axios';
-
-@Injectable()
-export class AuthService {
-  async validateToken(token: string): Promise<boolean> {
-    try {
-      const response = await axios.get('https://your-validation-service.com/validate', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-      });
-      return response.status === 200; // or check response.data if needed
-    } catch (error) {
-      console.error('Token validation failed:', error);
-      return false;
-    }
-  }
-}
-
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Injectable()
@@ -64,7 +20,7 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const token = request.cookies?.['your-cookie-name']; // Get the token from cookies
+    const token = request.cookies?.['your-cookie-name']; // Replace 'your-cookie-name' with your cookie name
 
     if (!token) {
       throw new HttpException('Unauthorized: Token missing', HttpStatus.UNAUTHORIZED);
@@ -75,9 +31,31 @@ export class AuthGuard implements CanActivate {
       throw new HttpException('Unauthorized: Invalid token', HttpStatus.UNAUTHORIZED);
     }
 
-    return true; // Proceed if the token is valid
+    return true; // Allow access if the token is valid
   }
 }
+import { Injectable } from '@nestjs/common';
+import axios from 'axios';
+
+@Injectable()
+export class AuthService {
+  async validateToken(token: string): Promise<boolean> {
+    try {
+      const response = await axios.get('https://your-validation-service.com/validate', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true, // Include cookies in the request
+      });
+
+      return response.status === 200; // Adjust this logic based on the response format
+    } catch (error) {
+      console.error('Token validation failed:', error.message);
+      return false;
+    }
+  }
+}
+
 
 
 
