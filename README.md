@@ -5,9 +5,10 @@
 import axios from 'axios';
 import { BASE_PATH_TPR } from '../utils/Constant';
 
+// Axios instance
 const axiosInstance = axios.create({
   baseURL: BASE_PATH_TPR,
-  withCredentials: true, // Ensure cookies are sent with requests
+  withCredentials: true, // Automatically include cookies in requests
 });
 
 let isRefreshing = false;
@@ -24,22 +25,33 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
+// Request Interceptor (optional, if no additional headers are needed)
 axiosInstance.interceptors.request.use(
-  async (config) => {
-    const accessToken = getCookie('access_token'); // Replace this with your function to get the cookie
-    const isTokenExpired = checkTokenExpiry(accessToken); // Check token expiration
+  (config) => {
+    // No access to token because it's in HttpOnly cookies
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-    if (isTokenExpired) {
+// Response Interceptor
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
       if (!isRefreshing) {
         isRefreshing = true;
+
         try {
-          const response = await axios.post(`${BASE_PATH_TPR}/auth/refresh`, {}, { withCredentials: true });
-          const newAccessToken = response.data.access_token;
+          // Call the refresh endpoint to renew the token
+          await axios.post(`${BASE_PATH_TPR}/auth/refresh`, {}, { withCredentials: true });
 
-          // Update the cookie or store the token
-          setCookie('access_token', newAccessToken); // Replace this with your cookie-setting logic
-
-          processQueue(null, newAccessToken);
+          // Retry failed requests after refreshing the token
+          processQueue(null);
         } catch (err) {
           processQueue(err, null);
           throw err;
@@ -50,57 +62,17 @@ axiosInstance.interceptors.request.use(
 
       return new Promise((resolve, reject) => {
         failedQueue.push({
-          resolve: (token: string) => {
-            if (config.headers) {
-              config.headers['Authorization'] = `Bearer ${token}`;
-            }
-            resolve(config);
-          },
-          reject: (err: any) => {
-            reject(err);
-          },
+          resolve: () => resolve(axiosInstance(originalRequest)),
+          reject: (err: any) => reject(err),
         });
       });
     }
 
-    // Add the token to the headers
-    if (accessToken && config.headers) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`;
-    }
-
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-axiosInstance.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
-      console.error('Unauthorized! Redirecting to login...');
-    }
     return Promise.reject(error);
   }
 );
 
 export default axiosInstance;
-
-// Helper Functions
-function getCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match ? match[2] : null;
-}
-
-function setCookie(name: string, value: string): void {
-  document.cookie = `${name}=${value}; path=/;`;
-}
-
-function checkTokenExpiry(token: string | null): boolean {
-  if (!token) return true; // No token means it's expired or invalid
-  const payload = JSON.parse(atob(token.split('.')[1])); // Decode JWT payload
-  const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
-  return payload.exp < currentTime;
-}
 
 
 ```
