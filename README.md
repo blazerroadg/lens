@@ -2,60 +2,104 @@
 
 
 ```
-async refreshAccessToken(refreshToken: string): Promise<any> {
-  try {
-    const params = new URLSearchParams();
-    params.append('grant_type', 'refresh_token');
-    params.append('refresh_token', refreshToken);
-    params.append('client_id', process.env.pingFedClient);
-    params.append('client_secret', process.env.pingFedSecret);
+import axios from 'axios';
+import { BASE_PATH_TPR } from '../utils/Constant';
 
-    const response = await axios.post(
-      `https://pfed${process.env.pingFedEnv}.walmart.com/as/token.oauth2`,
-      params,
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+const axiosInstance = axios.create({
+  baseURL: BASE_PATH_TPR,
+  withCredentials: true, // Ensure cookies are sent with requests
+});
+
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (token) {
+      prom.resolve(token);
+    } else {
+      prom.reject(error);
+    }
+  });
+  failedQueue = [];
+};
+
+axiosInstance.interceptors.request.use(
+  async (config) => {
+    const accessToken = getCookie('access_token'); // Replace this with your function to get the cookie
+    const isTokenExpired = checkTokenExpiry(accessToken); // Check token expiration
+
+    if (isTokenExpired) {
+      if (!isRefreshing) {
+        isRefreshing = true;
+        try {
+          const response = await axios.post(`${BASE_PATH_TPR}/auth/refresh`, {}, { withCredentials: true });
+          const newAccessToken = response.data.access_token;
+
+          // Update the cookie or store the token
+          setCookie('access_token', newAccessToken); // Replace this with your cookie-setting logic
+
+          processQueue(null, newAccessToken);
+        } catch (err) {
+          processQueue(err, null);
+          throw err;
+        } finally {
+          isRefreshing = false;
+        }
       }
-    );
 
-    return response.data;
-  } catch (error) {
-    console.error('Error refreshing access token:', error);
-    throw new UnauthorizedException('Could not refresh access token');
-  }
-}
-
-
-@Get('refresh-token')
-@ApiOperation({ summary: 'Refresh the access token' })
-async refreshToken(@Req() req: Request, @Res() res: Response): Promise<any> {
-  try {
-    const refreshToken = req.cookies['refresh_token'];
-    if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token is missing');
+      return new Promise((resolve, reject) => {
+        failedQueue.push({
+          resolve: (token: string) => {
+            if (config.headers) {
+              config.headers['Authorization'] = `Bearer ${token}`;
+            }
+            resolve(config);
+          },
+          reject: (err: any) => {
+            reject(err);
+          },
+        });
+      });
     }
 
-    const newTokens = await this.oauthStartegy.refreshAccessToken(refreshToken);
+    // Add the token to the headers
+    if (accessToken && config.headers) {
+      config.headers['Authorization'] = `Bearer ${accessToken}`;
+    }
 
-    // Set the new tokens in cookies
-    res.cookie('access_token', newTokens.access_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
-    res.cookie('refresh_token', newTokens.refresh_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-    return res.status(200).send({ message: 'Token refreshed successfully' });
-  } catch (error) {
-    console.error('Error refreshing token:', error);
-    throw new UnauthorizedException('Could not refresh token');
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      console.error('Unauthorized! Redirecting to login...');
+    }
+    return Promise.reject(error);
   }
+);
+
+export default axiosInstance;
+
+// Helper Functions
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? match[2] : null;
+}
+
+function setCookie(name: string, value: string): void {
+  document.cookie = `${name}=${value}; path=/;`;
+}
+
+function checkTokenExpiry(token: string | null): boolean {
+  if (!token) return true; // No token means it's expired or invalid
+  const payload = JSON.parse(atob(token.split('.')[1])); // Decode JWT payload
+  const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+  return payload.exp < currentTime;
 }
 
 
