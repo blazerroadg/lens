@@ -2,61 +2,61 @@
 
 
 ```
-import { Injectable, NestMiddleware } from '@nestjs/common';
-import * as cookieParser from 'cookie-parser';
+async refreshAccessToken(refreshToken: string): Promise<any> {
+  try {
+    const params = new URLSearchParams();
+    params.append('grant_type', 'refresh_token');
+    params.append('refresh_token', refreshToken);
+    params.append('client_id', process.env.pingFedClient);
+    params.append('client_secret', process.env.pingFedSecret);
 
-@Injectable()
-export class CookieParserMiddleware implements NestMiddleware {
-  use(req: any, res: any, next: () => void) {
-    cookieParser()(req, res, next); // Parse cookies
-  }
-}
-import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
-import { AuthService } from './auth.service';
-
-@Injectable()
-export class AuthGuard implements CanActivate {
-  constructor(private readonly authService: AuthService) {}
-
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const token = request.cookies?.['your-cookie-name']; // Replace 'your-cookie-name' with your cookie name
-
-    if (!token) {
-      throw new HttpException('Unauthorized: Token missing', HttpStatus.UNAUTHORIZED);
-    }
-
-    const isValid = await this.authService.validateToken(token);
-    if (!isValid) {
-      throw new HttpException('Unauthorized: Invalid token', HttpStatus.UNAUTHORIZED);
-    }
-
-    return true; // Allow access if the token is valid
-  }
-}
-import { Injectable } from '@nestjs/common';
-import axios from 'axios';
-
-@Injectable()
-export class AuthService {
-  async validateToken(token: string): Promise<boolean> {
-    try {
-      const response = await axios.get('https://your-validation-service.com/validate', {
+    const response = await axios.post(
+      `https://pfed${process.env.pingFedEnv}.walmart.com/as/token.oauth2`,
+      params,
+      {
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        withCredentials: true, // Include cookies in the request
-      });
+      }
+    );
 
-      return response.status === 200; // Adjust this logic based on the response format
-    } catch (error) {
-      console.error('Token validation failed:', error.message);
-      return false;
-    }
+    return response.data;
+  } catch (error) {
+    console.error('Error refreshing access token:', error);
+    throw new UnauthorizedException('Could not refresh access token');
   }
 }
 
 
+@Get('refresh-token')
+@ApiOperation({ summary: 'Refresh the access token' })
+async refreshToken(@Req() req: Request, @Res() res: Response): Promise<any> {
+  try {
+    const refreshToken = req.cookies['refresh_token'];
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token is missing');
+    }
+
+    const newTokens = await this.oauthStartegy.refreshAccessToken(refreshToken);
+
+    // Set the new tokens in cookies
+    res.cookie('access_token', newTokens.access_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
+    res.cookie('refresh_token', newTokens.refresh_token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
+
+    return res.status(200).send({ message: 'Token refreshed successfully' });
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    throw new UnauthorizedException('Could not refresh token');
+  }
+}
 
 
 ```
