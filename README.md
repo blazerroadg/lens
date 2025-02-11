@@ -3,7 +3,76 @@
 
 ```
 
-    allowedHeaders: 'Content-Type, Authorization',
+import React, { useEffect, useState } from "react";
+import { Routes, Route } from "react-router-dom";
+import axios from "axios";
+
+// Import all components
+import Login from "./Login";
+import Callback from "./Callback";
+import VerifyEdit from "./VerifyEdit";
+import Associate from "./Associate";
+import TeamLeads from "./TeamLeads";
+import KipAdmin from "./KipAdmin";
+import KipView from "./KipView";
+import KipApprove from "./KipApprove";
+import SetUser from "./SetUser";
+import KipList from "./KipList";
+import NationalManager from "./NationalManager";
+import BulkEntry from "./BulkEntry";
+import SwipReport from "./SwipReport";
+import InhouseReport from "./InhouseReport";
+import ReportTable from "./ReportTable";
+import ProtectedRoute from "./ProtectedRoute";
+
+// Mapping of paths to components
+const routeComponents = {
+  "/": Login,
+  "/callback": Callback,
+  "/dashboard": VerifyEdit,
+  "/associate": Associate,
+  "/teamlead": TeamLeads,
+  "/kpi": KipAdmin,
+  "/kpi/view/:id": KipView,
+  "/kpi/approve/:id": KipApprove,
+  "/kpi/setuser/:id": SetUser,
+  "/kpi/list": KipList,
+  "/national-manager": NationalManager,
+  "/bulkentry": BulkEntry,
+  "/verifiedit": VerifyEdit,
+  "/kpi/swipe-report": SwipReport,
+  "/kpi/inhouse-report": InhouseReport,
+  "/kpi/test-report": ReportTable
+};
+
+const DynamicRoutes = () => {
+  const [routes, setRoutes] = useState([]);
+
+  useEffect(() => {
+    // Fetch route configuration from API
+    axios.get("https://your-api-endpoint.com/routes") // Replace with your actual API URL
+      .then(response => {
+        const validRoutes = response.data.filter(route => routeComponents[route.path]); // Only include known routes
+        setRoutes(validRoutes);
+      })
+      .catch(error => {
+        console.error("Error fetching routes:", error);
+      });
+  }, []);
+
+  return (
+    <Routes>
+      {routes.map((route, index) => {
+        const Component = routeComponents[route.path]; // Match the path with the component
+        return Component ? (
+          <Route key={index} path={route.path} element={<Component />} />
+        ) : null;
+      })}
+    </Routes>
+  );
+};
+
+export default DynamicRoutes;
 
 ```
 
