@@ -45,6 +45,23 @@ const routeComponents = {
   "/kpi/test-report": ReportTable
 };
 
+// Recursive function to extract all route paths from nested structure
+const extractRoutes = (routes, parentPath = "") => {
+  let extractedRoutes = [];
+
+  routes.forEach(route => {
+    const fullPath = `${parentPath}${route.path}`; // Construct full path
+
+    extractedRoutes.push(fullPath);
+
+    if (route.children && Array.isArray(route.children)) {
+      extractedRoutes = [...extractedRoutes, ...extractRoutes(route.children, fullPath)];
+    }
+  });
+
+  return extractedRoutes;
+};
+
 const DynamicRoutes = () => {
   const [routes, setRoutes] = useState([]);
 
@@ -52,7 +69,8 @@ const DynamicRoutes = () => {
     // Fetch route configuration from API
     axios.get("https://your-api-endpoint.com/routes") // Replace with your actual API URL
       .then(response => {
-        const validRoutes = response.data.filter(route => routeComponents[route.path]); // Only include known routes
+        const extractedRoutes = extractRoutes(response.data);
+        const validRoutes = extractedRoutes.filter(path => routeComponents[path]); // Only include known routes
         setRoutes(validRoutes);
       })
       .catch(error => {
@@ -62,10 +80,10 @@ const DynamicRoutes = () => {
 
   return (
     <Routes>
-      {routes.map((route, index) => {
-        const Component = routeComponents[route.path]; // Match the path with the component
+      {routes.map((path, index) => {
+        const Component = routeComponents[path];
         return Component ? (
-          <Route key={index} path={route.path} element={<Component />} />
+          <Route key={index} path={path} element={<Component />} />
         ) : null;
       })}
     </Routes>
