@@ -5,33 +5,42 @@
 CREATE VIEW vw_TotalWorkHours AS
 WITH ParsedClockData AS (
     SELECT 
-        wrks_clocks,
-        value AS record,
-        PARSENAME(REPLACE(value, '&', '.'), 3) AS event_time,  -- Extract Time
-        PARSENAME(REPLACE(value, '&', '.'), 2) AS event_date,  -- Extract Date
-        PARSENAME(REPLACE(value, '&', '.'), 1) AS event_type   -- Extract Event Type
-    FROM (
-        SELECT wrks_clocks, 
-               STRING_SPLIT(wrks_clocks, '~')  -- Split by "~" to separate records
-        FROM WORK_SUMMARY
-    ) AS SplitData
+        ws.wrks_clocks,
+        -- Extract each clock event as XML nodes
+        CAST('<Data><Record>' + 
+             REPLACE(ws.wrks_clocks, '~', '</Record><Record>') + 
+             '</Record></Data>' AS XML) AS ClockXML
+    FROM WORK_SUMMARY AS ws
+),
+ExtractedData AS (
+    SELECT
+        p.wrks_clocks,
+        x.n.value('.', 'VARCHAR(MAX)') AS ClockEntry
+    FROM ParsedClockData AS p
+    CROSS APPLY ClockXML.nodes('/Data/Record') AS x(n)
 ),
 ProcessedTimes AS (
     SELECT 
         wrks_clocks,
-        event_date,
-        event_time,
-        event_type,
-        TRY_CAST(CONVERT(DATETIME, event_date + ' ' + event_time, 112) AS DATETIME) AS event_datetime
-    FROM ParsedClockData
+        -- Extract date, time, and event type from the entry
+        TRY_CAST(SUBSTRING(ClockEntry, CHARINDEX('ActionTime=', ClockEntry) + 11, 14) AS DATETIME) AS EventDateTime,
+        CASE 
+            WHEN ClockEntry LIKE '%ClockTag=P%' THEN 'ClockIn'
+            WHEN ClockEntry LIKE '%ClockTag=F%' THEN 'ClockOut'
+            WHEN ClockEntry LIKE '%TCODE=MEAL%' THEN 'MealStart'
+            WHEN ClockEntry LIKE '%TCODE=MRK%' THEN 'MealEnd'
+            ELSE NULL 
+        END AS EventType
+    FROM ExtractedData
+    WHERE ClockEntry LIKE '%ActionTime=%' -- Ensure only valid entries are processed
 ),
 GroupedTimes AS (
     SELECT 
         wrks_clocks,
-        MAX(CASE WHEN event_type LIKE '%ClockTag=P%' THEN event_datetime END) AS ClockInTime,
-        MAX(CASE WHEN event_type LIKE '%ClockTag=F%' THEN event_datetime END) AS ClockOutTime,
-        MAX(CASE WHEN event_type LIKE '%TCODE=MEAL%' THEN event_datetime END) AS MealStartTime,
-        MAX(CASE WHEN event_type LIKE '%TCODE=MRK%' THEN event_datetime END) AS MealEndTime
+        MAX(CASE WHEN EventType = 'ClockIn' THEN EventDateTime END) AS ClockInTime,
+        MAX(CASE WHEN EventType = 'ClockOut' THEN EventDateTime END) AS ClockOutTime,
+        MAX(CASE WHEN EventType = 'MealStart' THEN EventDateTime END) AS MealStartTime,
+        MAX(CASE WHEN EventType = 'MealEnd' THEN EventDateTime END) AS MealEndTime
     FROM ProcessedTimes
     GROUP BY wrks_clocks
 )
@@ -41,10 +50,12 @@ SELECT
     ClockOutTime,
     MealStartTime,
     MealEndTime,
+    -- Calculate total hours and net hours
     DATEDIFF(MINUTE, ClockInTime, ClockOutTime) / 60.0 AS TotalWorkHours,
     DATEDIFF(MINUTE, MealStartTime, MealEndTime) / 60.0 AS MealDuration,
     (DATEDIFF(MINUTE, ClockInTime, ClockOutTime) - DATEDIFF(MINUTE, MealStartTime, MealEndTime)) / 60.0 AS NetWorkHours
 FROM GroupedTimes;
+
 
 
 ```
