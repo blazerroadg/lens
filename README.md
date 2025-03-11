@@ -3,48 +3,61 @@
 
 ```
 CREATE VIEW vw_TotalWorkHours AS
-WITH ExtractedData AS (
+WITH ParsedClockData AS (
+    -- Step 1: Split wrks_clocks by '~' (assuming ~ separates entries)
+    SELECT 
+        ws.wrks_clocks, 
+        TRIM(value) AS record
+    FROM WORK_SUMMARY AS ws
+    CROSS APPLY STRING_SPLIT(ws.wrks_clocks, '~') AS SplitData
+),
+ProcessedTimes AS (
+    -- Step 2: Extract ActionTime and EventType
     SELECT 
         wrks_clocks,
-
-        -- Extract ActionTime (YYYYMMDDHHMMSS format)
+        
+        -- Extract ActionTime (14-digit datetime in YYYYMMDDHHMMSS format)
         TRY_CAST(
-            SUBSTRING(wrks_clocks, 
-                      CHARINDEX('ActionTime=', wrks_clocks) + 11, 
-                      14) AS DATETIME
+            SUBSTRING(record, CHARINDEX('ActionTime=', record) + 11, 14) AS DATETIME
         ) AS EventDateTime,
-
-        -- Identify Event Type based on known keywords
+        
+        -- Identify event type (Clock In, Clock Out, Meal Start, Meal End)
         CASE 
-            WHEN wrks_clocks LIKE '%ClockTag=P%' THEN 'ClockIn'
-            WHEN wrks_clocks LIKE '%ClockTag=F%' THEN 'ClockOut'
-            WHEN wrks_clocks LIKE '%TCODE=MEAL%' THEN 'MealStart'
-            WHEN wrks_clocks LIKE '%TCODE=MRK%' THEN 'MealEnd'
+            WHEN record LIKE '%ClockTag=P%' THEN 'ClockIn'
+            WHEN record LIKE '%ClockTag=F%' THEN 'ClockOut'
+            WHEN record LIKE '%TCODE=MEAL%' THEN 'MealStart'
+            WHEN record LIKE '%TCODE=MRK%' THEN 'MealEnd'
             ELSE NULL 
         END AS EventType
-    FROM WORK_SUMMARY
-    WHERE wrks_clocks LIKE '%ActionTime=%' -- Only process valid entries
+    FROM ParsedClockData
+    WHERE record LIKE '%ActionTime=%' -- Ensure only valid entries are processed
 ),
 GroupedTimes AS (
-    -- Pivot the extracted data
+    -- Step 3: Pivot the extracted data to get one row per shift
     SELECT 
         wrks_clocks,
         MAX(CASE WHEN EventType = 'ClockIn' THEN EventDateTime END) AS ClockInTime,
         MAX(CASE WHEN EventType = 'ClockOut' THEN EventDateTime END) AS ClockOutTime,
         MAX(CASE WHEN EventType = 'MealStart' THEN EventDateTime END) AS MealStartTime,
         MAX(CASE WHEN EventType = 'MealEnd' THEN EventDateTime END) AS MealEndTime
-    FROM ExtractedData
+    FROM ProcessedTimes
     GROUP BY wrks_clocks
 )
+-- Step 4: Compute Work Hours
 SELECT 
     wrks_clocks,
     ClockInTime,
     ClockOutTime,
     MealStartTime,
     MealEndTime,
-    -- Calculate total hours and net hours
+    
+    -- Total work duration
     DATEDIFF(MINUTE, ClockInTime, ClockOutTime) / 60.0 AS TotalWorkHours,
+    
+    -- Meal break duration
     DATEDIFF(MINUTE, MealStartTime, MealEndTime) / 60.0 AS MealDuration,
+    
+    -- Net work hours (Total Work - Meal Breaks)
     (DATEDIFF(MINUTE, ClockInTime, ClockOutTime) - DATEDIFF(MINUTE, MealStartTime, MealEndTime)) / 60.0 AS NetWorkHours
 FROM GroupedTimes;
 
