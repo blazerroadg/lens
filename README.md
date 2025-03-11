@@ -3,45 +3,37 @@
 
 ```
 CREATE VIEW vw_TotalWorkHours AS
-WITH ParsedClockData AS (
-    SELECT 
-        ws.wrks_clocks,
-        -- Extract each clock event as XML nodes
-        CAST('<Data><Record>' + 
-             REPLACE(ws.wrks_clocks, '~', '</Record><Record>') + 
-             '</Record></Data>' AS XML) AS ClockXML
-    FROM WORK_SUMMARY AS ws
-),
-ExtractedData AS (
-    SELECT
-        p.wrks_clocks,
-        x.n.value('.', 'VARCHAR(MAX)') AS ClockEntry
-    FROM ParsedClockData AS p
-    CROSS APPLY ClockXML.nodes('/Data/Record') AS x(n)
-),
-ProcessedTimes AS (
+WITH ExtractedData AS (
     SELECT 
         wrks_clocks,
-        -- Extract date, time, and event type from the entry
-        TRY_CAST(SUBSTRING(ClockEntry, CHARINDEX('ActionTime=', ClockEntry) + 11, 14) AS DATETIME) AS EventDateTime,
+
+        -- Extract ActionTime (YYYYMMDDHHMMSS format)
+        TRY_CAST(
+            SUBSTRING(wrks_clocks, 
+                      CHARINDEX('ActionTime=', wrks_clocks) + 11, 
+                      14) AS DATETIME
+        ) AS EventDateTime,
+
+        -- Identify Event Type based on known keywords
         CASE 
-            WHEN ClockEntry LIKE '%ClockTag=P%' THEN 'ClockIn'
-            WHEN ClockEntry LIKE '%ClockTag=F%' THEN 'ClockOut'
-            WHEN ClockEntry LIKE '%TCODE=MEAL%' THEN 'MealStart'
-            WHEN ClockEntry LIKE '%TCODE=MRK%' THEN 'MealEnd'
+            WHEN wrks_clocks LIKE '%ClockTag=P%' THEN 'ClockIn'
+            WHEN wrks_clocks LIKE '%ClockTag=F%' THEN 'ClockOut'
+            WHEN wrks_clocks LIKE '%TCODE=MEAL%' THEN 'MealStart'
+            WHEN wrks_clocks LIKE '%TCODE=MRK%' THEN 'MealEnd'
             ELSE NULL 
         END AS EventType
-    FROM ExtractedData
-    WHERE ClockEntry LIKE '%ActionTime=%' -- Ensure only valid entries are processed
+    FROM WORK_SUMMARY
+    WHERE wrks_clocks LIKE '%ActionTime=%' -- Only process valid entries
 ),
 GroupedTimes AS (
+    -- Pivot the extracted data
     SELECT 
         wrks_clocks,
         MAX(CASE WHEN EventType = 'ClockIn' THEN EventDateTime END) AS ClockInTime,
         MAX(CASE WHEN EventType = 'ClockOut' THEN EventDateTime END) AS ClockOutTime,
         MAX(CASE WHEN EventType = 'MealStart' THEN EventDateTime END) AS MealStartTime,
         MAX(CASE WHEN EventType = 'MealEnd' THEN EventDateTime END) AS MealEndTime
-    FROM ProcessedTimes
+    FROM ExtractedData
     GROUP BY wrks_clocks
 )
 SELECT 
