@@ -2,95 +2,50 @@
 
 
 ```
+CREATE VIEW vw_TotalWorkHours AS
+WITH ParsedClockData AS (
+    SELECT 
+        wrks_clocks,
+        value AS record,
+        PARSENAME(REPLACE(value, '&', '.'), 3) AS event_time,  -- Extract Time
+        PARSENAME(REPLACE(value, '&', '.'), 2) AS event_date,  -- Extract Date
+        PARSENAME(REPLACE(value, '&', '.'), 1) AS event_type   -- Extract Event Type
+    FROM (
+        SELECT wrks_clocks, 
+               STRING_SPLIT(wrks_clocks, '~')  -- Split by "~" to separate records
+        FROM WORK_SUMMARY
+    ) AS SplitData
+),
+ProcessedTimes AS (
+    SELECT 
+        wrks_clocks,
+        event_date,
+        event_time,
+        event_type,
+        TRY_CAST(CONVERT(DATETIME, event_date + ' ' + event_time, 112) AS DATETIME) AS event_datetime
+    FROM ParsedClockData
+),
+GroupedTimes AS (
+    SELECT 
+        wrks_clocks,
+        MAX(CASE WHEN event_type LIKE '%ClockTag=P%' THEN event_datetime END) AS ClockInTime,
+        MAX(CASE WHEN event_type LIKE '%ClockTag=F%' THEN event_datetime END) AS ClockOutTime,
+        MAX(CASE WHEN event_type LIKE '%TCODE=MEAL%' THEN event_datetime END) AS MealStartTime,
+        MAX(CASE WHEN event_type LIKE '%TCODE=MRK%' THEN event_datetime END) AS MealEndTime
+    FROM ProcessedTimes
+    GROUP BY wrks_clocks
+)
+SELECT 
+    wrks_clocks,
+    ClockInTime,
+    ClockOutTime,
+    MealStartTime,
+    MealEndTime,
+    DATEDIFF(MINUTE, ClockInTime, ClockOutTime) / 60.0 AS TotalWorkHours,
+    DATEDIFF(MINUTE, MealStartTime, MealEndTime) / 60.0 AS MealDuration,
+    (DATEDIFF(MINUTE, ClockInTime, ClockOutTime) - DATEDIFF(MINUTE, MealStartTime, MealEndTime)) / 60.0 AS NetWorkHours
+FROM GroupedTimes;
 
-import React, { useEffect, useState } from "react";
-import { Routes, Route } from "react-router-dom";
-import axios from "axios";
-
-// Import all components
-import Login from "./Login";
-import Callback from "./Callback";
-import VerifyEdit from "./VerifyEdit";
-import Associate from "./Associate";
-import TeamLeads from "./TeamLeads";
-import KipAdmin from "./KipAdmin";
-import KipView from "./KipView";
-import KipApprove from "./KipApprove";
-import SetUser from "./SetUser";
-import KipList from "./KipList";
-import NationalManager from "./NationalManager";
-import BulkEntry from "./BulkEntry";
-import SwipReport from "./SwipReport";
-import InhouseReport from "./InhouseReport";
-import ReportTable from "./ReportTable";
-import ProtectedRoute from "./ProtectedRoute";
-
-// Mapping of paths to components
-const routeComponents = {
-  "/": Login,
-  "/callback": Callback,
-  "/dashboard": VerifyEdit,
-  "/associate": Associate,
-  "/teamlead": TeamLeads,
-  "/kpi": KipAdmin,
-  "/kpi/view/:id": KipView,
-  "/kpi/approve/:id": KipApprove,
-  "/kpi/setuser/:id": SetUser,
-  "/kpi/list": KipList,
-  "/national-manager": NationalManager,
-  "/bulkentry": BulkEntry,
-  "/verifiedit": VerifyEdit,
-  "/kpi/swipe-report": SwipReport,
-  "/kpi/inhouse-report": InhouseReport,
-  "/kpi/test-report": ReportTable
-};
-
-// Recursive function to extract all route paths from nested structure
-const extractRoutes = (routes, parentPath = "") => {
-  let extractedRoutes = [];
-
-  routes.forEach(route => {
-    const fullPath = `${parentPath}${route.path}`; // Construct full path
-
-    extractedRoutes.push(fullPath);
-
-    if (route.children && Array.isArray(route.children)) {
-      extractedRoutes = [...extractedRoutes, ...extractRoutes(route.children, fullPath)];
-    }
-  });
-
-  return extractedRoutes;
-};
-
-const DynamicRoutes = () => {
-  const [routes, setRoutes] = useState([]);
-
-  useEffect(() => {
-    // Fetch route configuration from API
-    axios.get("https://your-api-endpoint.com/routes") // Replace with your actual API URL
-      .then(response => {
-        const extractedRoutes = extractRoutes(response.data);
-        const validRoutes = extractedRoutes.filter(path => routeComponents[path]); // Only include known routes
-        setRoutes(validRoutes);
-      })
-      .catch(error => {
-        console.error("Error fetching routes:", error);
-      });
-  }, []);
-
-  return (
-    <Routes>
-      {routes.map((path, index) => {
-        const Component = routeComponents[path];
-        return Component ? (
-          <Route key={index} path={path} element={<Component />} />
-        ) : null;
-      })}
-    </Routes>
-  );
-};
-
-export default DynamicRoutes;
 
 ```
 
