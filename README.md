@@ -4,46 +4,56 @@
 ```
 CREATE VIEW vw_TotalWorkHours AS
 WITH ParsedClockData AS (
-    -- Step 1: Split wrks_clocks by '~' (assuming ~ separates entries)
+    -- Step 1: Split wrks_clocks using ~
     SELECT 
-        ws.wrks_clocks, 
-        TRIM(value) AS record
+        ws.wrks_clocks,
+        LTRIM(RTRIM(value)) AS record
     FROM WORK_SUMMARY AS ws
     CROSS APPLY STRING_SPLIT(ws.wrks_clocks, '~') AS SplitData
 ),
 ProcessedTimes AS (
-    -- Step 2: Extract ActionTime and EventType
+    -- Step 2: Filter valid records (length > 18)
     SELECT 
         wrks_clocks,
         
-        -- Extract ActionTime (14-digit datetime in YYYYMMDDHHMMSS format)
+        -- Extract Date (YYYYMMDD)
+        SUBSTRING(record, 2, 8) AS EventDate,
+        
+        -- Extract Time (HHMMSS)
+        SUBSTRING(record, 10, 6) AS EventTime,
+        
+        -- Extract Type (01, 02, 06)
+        SUBSTRING(record, 16, 2) AS EventType,
+        
+        -- Convert extracted Date + Time into DATETIME
         TRY_CAST(
-            SUBSTRING(record, CHARINDEX('ActionTime=', record) + 11, 14) AS DATETIME
+            SUBSTRING(record, 2, 8) + ' ' + SUBSTRING(record, 10, 6) AS DATETIME
         ) AS EventDateTime,
         
-        -- Identify event type (Clock In, Clock Out, Meal Start, Meal End)
+        -- Determine Event Type
         CASE 
-            WHEN record LIKE '%ClockTag=P%' THEN 'ClockIn'
-            WHEN record LIKE '%ClockTag=F%' THEN 'ClockOut'
-            WHEN record LIKE '%TCODE=MEAL%' THEN 'MealStart'
-            WHEN record LIKE '%TCODE=MRK%' THEN 'MealEnd'
+            WHEN SUBSTRING(record, 16, 2) = '01' THEN 'ClockIn'
+            WHEN SUBSTRING(record, 16, 2) = '02' THEN 'ClockOut'
+            WHEN SUBSTRING(record, 16, 2) = '06' AND record LIKE '%MEAL%' THEN 'MealStart'
+            WHEN SUBSTRING(record, 16, 2) = '06' AND record LIKE '%WRK%' THEN 'MealEnd'
             ELSE NULL 
-        END AS EventType
+        END AS EventCategory
+
     FROM ParsedClockData
-    WHERE record LIKE '%ActionTime=%' -- Ensure only valid entries are processed
+    WHERE LEN(record) > 18  -- Step 3: Only process valid records
 ),
 GroupedTimes AS (
-    -- Step 3: Pivot the extracted data to get one row per shift
+    -- Step 4: Pivot the extracted data
     SELECT 
         wrks_clocks,
-        MAX(CASE WHEN EventType = 'ClockIn' THEN EventDateTime END) AS ClockInTime,
-        MAX(CASE WHEN EventType = 'ClockOut' THEN EventDateTime END) AS ClockOutTime,
-        MAX(CASE WHEN EventType = 'MealStart' THEN EventDateTime END) AS MealStartTime,
-        MAX(CASE WHEN EventType = 'MealEnd' THEN EventDateTime END) AS MealEndTime
+        MAX(CASE WHEN EventCategory = 'ClockIn' THEN EventDateTime END) AS ClockInTime,
+        MAX(CASE WHEN EventCategory = 'ClockOut' THEN EventDateTime END) AS ClockOutTime,
+        MAX(CASE WHEN EventCategory = 'MealStart' THEN EventDateTime END) AS MealStartTime,
+        MAX(CASE WHEN EventCategory = 'MealEnd' THEN EventDateTime END) AS MealEndTime
     FROM ProcessedTimes
     GROUP BY wrks_clocks
 )
--- Step 4: Compute Work Hours
+-- Step 5: Compute Work Hours
 SELECT 
     wrks_clocks,
     ClockInTime,
@@ -59,7 +69,9 @@ SELECT
     
     -- Net work hours (Total Work - Meal Breaks)
     (DATEDIFF(MINUTE, ClockInTime, ClockOutTime) - DATEDIFF(MINUTE, MealStartTime, MealEndTime)) / 60.0 AS NetWorkHours
+
 FROM GroupedTimes;
+
 
 
 
