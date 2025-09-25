@@ -2,76 +2,31 @@
 
 
 ```
-CREATE VIEW vw_TotalWorkHours AS
-WITH ParsedClockData AS (
-    -- Step 1: Split wrks_clocks using ~
-    SELECT 
-        ws.wrks_clocks,
-        LTRIM(RTRIM(value)) AS record
-    FROM WORK_SUMMARY AS ws
-    CROSS APPLY STRING_SPLIT(ws.wrks_clocks, '~') AS SplitData
-),
-ProcessedTimes AS (
-    -- Step 2: Filter valid records (length > 18)
-    SELECT 
-        wrks_clocks,
-        
-        -- Extract Date (YYYYMMDD)
-        SUBSTRING(record, 2, 8) AS EventDate,
-        
-        -- Extract Time (HHMMSS)
-        SUBSTRING(record, 10, 6) AS EventTime,
-        
-        -- Extract Type (01, 02, 06)
-        SUBSTRING(record, 16, 2) AS EventType,
-        
-        -- Convert extracted Date + Time into DATETIME
-        TRY_CAST(
-            SUBSTRING(record, 2, 8) + ' ' + SUBSTRING(record, 10, 6) AS DATETIME
-        ) AS EventDateTime,
-        
-        -- Determine Event Type
-        CASE 
-            WHEN SUBSTRING(record, 16, 2) = '01' THEN 'ClockIn'
-            WHEN SUBSTRING(record, 16, 2) = '02' THEN 'ClockOut'
-            WHEN SUBSTRING(record, 16, 2) = '06' AND record LIKE '%MEAL%' THEN 'MealStart'
-            WHEN SUBSTRING(record, 16, 2) = '06' AND record LIKE '%WRK%' THEN 'MealEnd'
-            ELSE NULL 
-        END AS EventCategory
+<div className="status-steps">
+  <div
+    className={`step ${status.step >= 1 || status.current_step === "Fetching metadata" || status.progress > 0.1 ? "active" : ""}`}
+  >
+    Fetching metadata
+  </div>
 
-    FROM ParsedClockData
-    WHERE LEN(record) > 18  -- Step 3: Only process valid records
-),
-GroupedTimes AS (
-    -- Step 4: Pivot the extracted data
-    SELECT 
-        wrks_clocks,
-        MAX(CASE WHEN EventCategory = 'ClockIn' THEN EventDateTime END) AS ClockInTime,
-        MAX(CASE WHEN EventCategory = 'ClockOut' THEN EventDateTime END) AS ClockOutTime,
-        MAX(CASE WHEN EventCategory = 'MealStart' THEN EventDateTime END) AS MealStartTime,
-        MAX(CASE WHEN EventCategory = 'MealEnd' THEN EventDateTime END) AS MealEndTime
-    FROM ProcessedTimes
-    GROUP BY wrks_clocks
-)
--- Step 5: Compute Work Hours
-SELECT 
-    wrks_clocks,
-    ClockInTime,
-    ClockOutTime,
-    MealStartTime,
-    MealEndTime,
-    
-    -- Total work duration
-    DATEDIFF(MINUTE, ClockInTime, ClockOutTime) / 60.0 AS TotalWorkHours,
-    
-    -- Meal break duration
-    DATEDIFF(MINUTE, MealStartTime, MealEndTime) / 60.0 AS MealDuration,
-    
-    -- Net work hours (Total Work - Meal Breaks)
-    (DATEDIFF(MINUTE, ClockInTime, ClockOutTime) - DATEDIFF(MINUTE, MealStartTime, MealEndTime)) / 60.0 AS NetWorkHours
+  <div
+    className={`step ${status.step >= 2 || status.current_step === "Extracting content" || status.progress > 0.3 ? "active" : ""}`}
+  >
+    Extracting content
+  </div>
 
-FROM GroupedTimes;
+  <div
+    className={`step ${status.step >= 3 || status.current_step === "Checking relevance" || status.progress > 0.5 ? "active" : ""}`}
+  >
+    Checking relevance
+  </div>
 
+  <div
+    className={`step ${status.current_step === "Extracting parameters" || status.progress > 0.8 || status.completed ? "active" : ""}`}
+  >
+    Extracting parameters
+  </div>
+</div>
 
 
 
