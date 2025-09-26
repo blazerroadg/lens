@@ -2,31 +2,74 @@
 
 
 ```
-<div className="status-steps">
-  <div
-    className={`step ${status.step >= 1 || status.current_step === "Fetching metadata" || status.progress > 0.1 ? "active" : ""}`}
+<form 
+  onSubmit={handleSubmit} 
+  className={`chat-input ${isFirstInteraction ? 'centered' : 'bottom'}`}
+>
+  {/* Attach button */}
+  <button 
+    type="button" 
+    className="chat-attach-button"
+    onClick={() => document.getElementById('fileInput').click()}
   >
-    Fetching metadata
-  </div>
+    +
+  </button>
+  <input
+    id="fileInput"
+    type="file"
+    style={{ display: 'none' }}
+    onChange={(e) => console.log("File selected:", e.target.files[0])}
+  />
 
-  <div
-    className={`step ${status.step >= 2 || status.current_step === "Extracting content" || status.progress > 0.3 ? "active" : ""}`}
-  >
-    Extracting content
-  </div>
+  {/* Message input */}
+  <input
+    type="text"
+    value={input}
+    onChange={(e) => setInput(e.target.value)}
+    placeholder="Type your message here..."
+  />
 
-  <div
-    className={`step ${status.step >= 3 || status.current_step === "Checking relevance" || status.progress > 0.5 ? "active" : ""}`}
+  {/* Send button */}
+  <button 
+    type="submit" 
+    className="chat-input-button" 
+    disabled={!input.trim() || isProcessing}
   >
-    Checking relevance
-  </div>
+    <svg 
+      width="16" 
+      height="16" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path 
+        d="M5 12L3 21L21 12L3 3L5 12ZM5 12L13 12" 
+        stroke="white" 
+        strokeWidth="2" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+      />
+    </svg>
+  </button>
+</form>
 
-  <div
-    className={`step ${status.current_step === "Extracting parameters" || status.progress > 0.8 || status.completed ? "active" : ""}`}
-  >
-    Extracting parameters
-  </div>
-</div>
+
+.chat-attach-button {
+  background: #eee;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  margin-right: 8px;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 20px;
+  text-align: center;
+}
+.chat-attach-button:hover {
+  background: #ddd;
+}
+
 
 
 
